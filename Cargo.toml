@@ -1,0 +1,19 @@
+[package]
+name = "wita"
+version = "0.1.0"
+authors = ["LNSEAB <691752+LNSEAB@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+winapi = { version = "0.3.9", features = [
+	"libloaderapi",
+	"winuser",
+	"wingdi",
+	"shellscalingapi",
+	"windowsx",
+	"impl-default",
+] }
+serde = { version = "1.0.114", features = ["derive"] }
+
+[build-dependencies]
+embed-resource = "1.3.3"
