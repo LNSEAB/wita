@@ -23,7 +23,7 @@ unsafe impl Sync for WindowHandle {}
 
 pub struct WindowBuilder<Ti = (), S = ()> {
     title: Ti,
-    position: PhysicalPosition<i32>,
+    position: ScreenPosition,
     inner_size: S,
     resizable: bool,
     visibility: bool,
@@ -35,7 +35,7 @@ impl WindowBuilder<(), ()> {
     pub fn new() -> WindowBuilder<&'static str, LogicalSize<f32>> {
         WindowBuilder {
             title: "",
-            position: PhysicalPosition::new(0, 0),
+            position: ScreenPosition::new(0, 0),
             inner_size: LogicalSize::new(640.0, 480.0),
             resizable: true,
             visibility: true,
@@ -58,7 +58,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         }
     }
 
-    pub fn position(mut self, position: PhysicalPosition<i32>) -> Self {
+    pub fn position(mut self, position: ScreenPosition) -> Self {
         self.position = position;
         self
     }
@@ -190,6 +190,14 @@ impl Window {
         Self {
             hwnd: WindowHandle(hwnd),
             state: Arc::new(RwLock::new(state)),
+        }
+    }
+
+    pub fn position(&self) -> ScreenPosition {
+        unsafe {
+            let mut rc = RECT::default();
+            GetWindowRect(self.hwnd.0, &mut rc);
+            ScreenPosition::new(rc.left, rc.top)
         }
     }
 

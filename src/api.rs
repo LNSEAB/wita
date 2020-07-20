@@ -2,7 +2,7 @@ use crate::geometry::*;
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{shellscalingapi::*, winuser::*, imm::*, winnt::*};
 
-pub fn get_dpi_from_point(pt: PhysicalPosition<i32>) -> u32 {
+pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
     unsafe {
         let mut dpi_x = 0;
         let mut _dpi_y = 0;
