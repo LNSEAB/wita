@@ -1,4 +1,4 @@
-use wita::{Context, EventHandler, KeyState, MouseButton, MouseState, RunType, Window, WindowBuilder, KeyCode};
+use wita::{Context, EventHandler, KeyCode, KeyState, MouseButton, MouseState, RunType, Window, WindowBuilder};
 
 struct Application;
 

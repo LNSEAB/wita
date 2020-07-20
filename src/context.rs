@@ -1,17 +1,10 @@
-use crate::{
-    device::*,
-    event::EventHandler,
-    window::Window,
-};
+use crate::{device::*, event::EventHandler, window::Window};
 use std::cell::{RefCell, RefMut};
+use std::panic::resume_unwind;
 use std::rc::Rc;
 use std::sync::Once;
-use std::panic::resume_unwind;
 use winapi::shared::{minwindef::*, windef::*, winerror::S_OK};
-use winapi::um::{
-    shellscalingapi::*,
-    winuser::*,
-};
+use winapi::um::{shellscalingapi::*, winuser::*};
 
 pub(crate) const DEFAULT_DPI: f32 = 96.0;
 
@@ -157,7 +150,6 @@ impl Context {
                 }
             },
         }
-
     }
 
     pub(crate) fn window_table(&self) -> RefMut<Vec<(HWND, Window)>> {

@@ -1,6 +1,6 @@
 use crate::geometry::*;
 use winapi::shared::{minwindef::*, windef::*};
-use winapi::um::{shellscalingapi::*, winuser::*, imm::*, winnt::*};
+use winapi::um::{imm::*, shellscalingapi::*, winnt::*, winuser::*};
 
 pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
     unsafe {
@@ -89,10 +89,7 @@ impl ImmContext {
         unsafe {
             let himc = ImmCreateContext();
             ImmAssociateContextEx(hwnd, himc, IACE_CHILDREN);
-            Self {
-                hwnd,
-                himc,
-            }
+            Self { hwnd, himc }
         }
     }
 }

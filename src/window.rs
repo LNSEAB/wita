@@ -1,19 +1,11 @@
-use crate::{
-    api::*,
-    geometry::*,
-    procedure::window_proc,
-    context::*,
-};
-use winapi::shared::{
-    minwindef::*,
-    windef::*,
-};
+use crate::{api::*, context::*, geometry::*, procedure::window_proc};
+use std::sync::{Arc, Once, RwLock};
+use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{
     libloaderapi::GetModuleHandleW,
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
-use std::sync::{Arc, RwLock, Once};
 
 #[derive(Clone)]
 pub(crate) struct WindowHandle(HWND);
@@ -157,12 +149,15 @@ where
                 GetModuleHandleW(std::ptr::null_mut()),
                 std::ptr::null_mut(),
             );
-            let window = Window::new(hwnd, WindowState {
-                visible_composition_window: self.visible_composition_window,
-                visible_candidate_window: self.visible_candidate_window,
-                ime_position: PhysicalPosition::new(0, 0),
-                ime_context: ImmContext::new(hwnd),
-            });
+            let window = Window::new(
+                hwnd,
+                WindowState {
+                    visible_composition_window: self.visible_composition_window,
+                    visible_candidate_window: self.visible_candidate_window,
+                    ime_position: PhysicalPosition::new(0, 0),
+                    ime_context: ImmContext::new(hwnd),
+                },
+            );
             if self.visibility {
                 window.show();
             }

@@ -153,7 +153,8 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     eh.cursor_leaved(
                         &window,
                         MouseState {
-                            position: PhysicalPosition::new(pos.x as f32, pos.y as f32).to_logical(window.scale_factor()),
+                            position: PhysicalPosition::new(pos.x as f32, pos.y as f32)
+                                .to_logical(window.scale_factor()),
                             buttons: &mut state.mouse_buttons,
                         },
                     );
@@ -229,10 +230,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 call_handler(|eh, _| {
                     let imc = Imc::get(hwnd);
                     let ret = imc.get_composition_string(GCS_RESULTSTR);
-                    eh.ime_end_composition(
-                        &window,
-                        ret.as_ref().map(|s| s.as_str())
-                    );
+                    eh.ime_end_composition(&window, ret.as_ref().map(|s| s.as_str()));
                 });
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
