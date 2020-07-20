@@ -1,19 +1,15 @@
 use crate::{
-    api::*,
     device::*,
     event::EventHandler,
-    geometry::*,
-    procedure::window_proc,
-    window::{Window, WindowBuilder},
+    window::Window,
 };
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 use std::sync::Once;
+use std::panic::resume_unwind;
 use winapi::shared::{minwindef::*, windef::*, winerror::S_OK};
 use winapi::um::{
-    libloaderapi::GetModuleHandleW,
     shellscalingapi::*,
-    wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
 
@@ -30,12 +26,14 @@ pub enum RunType {
 
 pub(crate) struct ContextState {
     pub mouse_buttons: Vec<MouseButton>,
+    pub entered_window: Option<Window>,
 }
 
 impl ContextState {
     fn new() -> Self {
         Self {
             mouse_buttons: Vec::with_capacity(5),
+            entered_window: None,
         }
     }
 }
@@ -44,6 +42,7 @@ pub(crate) struct ContextImpl {
     event_handler: RefCell<Option<Box<dyn EventHandler>>>,
     window_table: RefCell<Vec<(HWND, Window)>>,
     state: RefCell<ContextState>,
+    unwind: RefCell<Option<Box<dyn std::any::Any + Send>>>,
 }
 
 impl ContextImpl {
@@ -52,6 +51,7 @@ impl ContextImpl {
             event_handler: RefCell::new(None),
             window_table: RefCell::new(Vec::new()),
             state: RefCell::new(ContextState::new()),
+            unwind: RefCell::new(None),
         }
     }
 
@@ -67,44 +67,13 @@ impl ContextImpl {
     }
 }
 
-fn register_class() -> &'static Vec<u16> {
-    static mut WINDOW_CLASS_NAME: Vec<u16> = Vec::new();
-    static REGISTER: Once = Once::new();
-    unsafe {
-        REGISTER.call_once(|| {
-            let class_name = "curun_window_class"
-                .encode_utf16()
-                .chain(Some(0))
-                .collect::<Vec<_>>();
-            let wc = WNDCLASSEXW {
-                cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
-                style: CS_VREDRAW | CS_HREDRAW,
-                lpfnWndProc: Some(window_proc),
-                cbClsExtra: 0,
-                cbWndExtra: 0,
-                hInstance: GetModuleHandleW(std::ptr::null_mut()),
-                hIcon: std::ptr::null_mut(),
-                hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
-                hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
-                lpszMenuName: std::ptr::null_mut(),
-                lpszClassName: class_name.as_ptr(),
-                hIconSm: std::ptr::null_mut(),
-            };
-            RegisterClassExW(&wc);
-            WINDOW_CLASS_NAME = class_name;
-        });
-        &WINDOW_CLASS_NAME
-    }
-}
-
 fn enable_dpi_awareness() {
     static ENABLE_DPI_AWARENESS: Once = Once::new();
     unsafe {
         ENABLE_DPI_AWARENESS.call_once(|| {
             if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) == TRUE {
                 return;
-            } else if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) == TRUE
-            {
+            } else if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) == TRUE {
                 return;
             } else if SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) == S_OK {
                 return;
@@ -117,13 +86,9 @@ pub(crate) fn find_window(hwnd: HWND) -> Option<Window> {
     CONTEXT.with(|context| {
         let context = context.borrow();
         let window_table = context.as_ref().unwrap().window_table.borrow();
-        window_table.iter().find_map(|(h, window)| {
-            if *h == hwnd {
-                Some(window.clone())
-            } else {
-                None
-            }
-        })
+        window_table
+            .iter()
+            .find_map(|(h, window)| if *h == hwnd { Some(window.clone()) } else { None })
     })
 }
 
@@ -140,6 +105,13 @@ pub(crate) fn root_window() -> Option<Window> {
         let window_table = context.as_ref().unwrap().window_table.borrow();
         window_table.first().map(|elem| elem.1.clone())
     })
+}
+
+pub(crate) fn set_unwind(payload: Box<dyn std::any::Any + Send>) {
+    CONTEXT.with(|context| {
+        let context = context.borrow();
+        *context.as_ref().unwrap().unwind.borrow_mut() = Some(payload);
+    });
 }
 
 pub struct Context(Rc<ContextImpl>);
@@ -166,6 +138,9 @@ impl Context {
                     } else {
                         call_handler(|eh, _| eh.idle())
                     }
+                    if let Some(e) = self.0.unwind.borrow_mut().take() {
+                        resume_unwind(e);
+                    }
                 }
             },
             RunType::Wait => unsafe {
@@ -176,58 +151,16 @@ impl Context {
                     }
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
+                    if let Some(e) = self.0.unwind.borrow_mut().take() {
+                        resume_unwind(e);
+                    }
                 }
             },
         }
+
     }
 
-    pub(crate) fn create_window<Ti, S>(&self, builder: WindowBuilder<Ti, S>) -> Window
-    where
-        Ti: AsRef<str>,
-        S: ToPhysicalSize<f32>,
-    {
-        let class_name = register_class();
-        let title = builder
-            .title
-            .as_ref()
-            .encode_utf16()
-            .chain(Some(0))
-            .collect::<Vec<_>>();
-        let mut style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
-        if builder.resizable {
-            style |= WS_THICKFRAME;
-        }
-        if builder.visibility {
-            style |= WS_VISIBLE;
-        }
-        unsafe {
-            let dpi = get_dpi_from_point(builder.position.clone());
-            let rc = adjust_window_rect(
-                builder.inner_size.to_physical(dpi as f32 / DEFAULT_DPI),
-                WS_OVERLAPPEDWINDOW,
-                0,
-                dpi,
-            );
-            let hwnd = CreateWindowExW(
-                0,
-                class_name.as_ptr(),
-                title.as_ptr(),
-                style,
-                builder.position.x,
-                builder.position.y,
-                (rc.right - rc.left) as i32,
-                (rc.bottom - rc.top) as i32,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                GetModuleHandleW(std::ptr::null_mut()),
-                std::ptr::null_mut(),
-            );
-            let window = Window(hwnd);
-            self.0
-                .window_table
-                .borrow_mut()
-                .push((hwnd, window.clone()));
-            window
-        }
+    pub(crate) fn window_table(&self) -> RefMut<Vec<(HWND, Window)>> {
+        self.0.window_table.borrow_mut()
     }
 }
