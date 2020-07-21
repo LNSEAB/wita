@@ -264,6 +264,16 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 }
                 0
             }
+            WM_SIZE => {
+                let value = lparam as DWORD;
+                let size = PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32);
+                call_handler(|eh, _| eh.resized(&window, size));
+                0
+            }
+            WM_MOVE => {
+                call_handler(|eh, _| eh.moved(&window, window.position()));
+                0
+            }
             WM_DPICHANGED => {
                 let rc = *(lparam as *const RECT);
                 SetWindowPos(

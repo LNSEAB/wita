@@ -15,6 +15,14 @@ impl EventHandler for Application {
         println!("closed");
     }
 
+    fn resized(&mut self, _: &Window, size: wita::PhysicalSize<f32>) {
+        println!("resized: {:?}", size);
+    }
+
+    fn moved(&mut self, _: &Window, pt: wita::ScreenPosition) {
+        println!("moved: {:?}", pt);
+    }
+
     fn dpi_changed(&mut self, window: &Window) {
         println!("dpi changed: {}", window.scale_factor());
     }

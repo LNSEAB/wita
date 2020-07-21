@@ -1,11 +1,13 @@
-use crate::{device::*, window::Window, ime::*};
+use crate::{device::*, window::Window, ime::*, geometry::*};
 
 pub trait EventHandler {
+    fn idle(&mut self) {}
     fn activated(&mut self, _: &Window) {}
     fn inactivated(&mut self, _: &Window) {}
     fn closed(&mut self, _: &Window) {}
+    fn moved(&mut self, _: &Window, _: ScreenPosition) {}
+    fn resized(&mut self, _: &Window, _: PhysicalSize<f32>) {}
     fn dpi_changed(&mut self, _: &Window) {}
-    fn idle(&mut self) {}
     fn mouse_input(&mut self, _: &Window, _: MouseButton, _: KeyState, _: MouseState) {}
     fn cursor_moved(&mut self, _: &Window, _: MouseState) {}
     fn cursor_entered(&mut self, _: &Window, _: MouseState) {}
