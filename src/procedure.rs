@@ -1,4 +1,4 @@
-use crate::{api::*, context::*, device::*, geometry::*, window::Window, ime};
+use crate::{api::*, context::*, device::*, geometry::*, ime, window::Window};
 use std::panic::catch_unwind;
 use winapi::shared::{minwindef::*, windef::*, windowsx::*};
 use winapi::um::winuser::*;
@@ -221,7 +221,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     if lparam & GCS_COMPSTR as LPARAM != 0 {
                         if let Some(CompositionString::CompStr(s)) = imc.get_composition_string(GCS_COMPSTR) {
                             if let Some(CompositionString::CompAttr(attrs)) = imc.get_composition_string(GCS_COMPATTR) {
-                                eh.ime_composition(&window, &ime::Composition::new(s, attrs), imc.get_candidate_list().as_ref());
+                                eh.ime_composition(
+                                    &window,
+                                    &ime::Composition::new(s, attrs),
+                                    imc.get_candidate_list().as_ref(),
+                                );
                             }
                         }
                     }

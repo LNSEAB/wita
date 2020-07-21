@@ -1,4 +1,9 @@
-use crate::{api::*, context::*, geometry::*, procedure::{window_proc, UserMessage}};
+use crate::{
+    api::*,
+    context::*,
+    geometry::*,
+    procedure::{window_proc, UserMessage},
+};
 use std::sync::{Arc, Once, RwLock};
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{

@@ -22,12 +22,11 @@ pub struct Composition {
 impl Composition {
     pub(crate) fn new(s: String, attrs: Vec<Attribute>) -> Self {
         Self {
-            chars: s.chars().zip(attrs.into_iter()).map(|(ch, attr)| {
-                CompositionChar {
-                    ch,
-                    attr,
-                }
-            }).collect::<Vec<_>>()
+            chars: s
+                .chars()
+                .zip(attrs.into_iter())
+                .map(|(ch, attr)| CompositionChar { ch, attr })
+                .collect::<Vec<_>>(),
         }
     }
 
@@ -67,10 +66,7 @@ pub struct CandidateList {
 
 impl CandidateList {
     pub(crate) fn new(list: Vec<String>, selection: usize) -> Self {
-        Self {
-            list,
-            selection,
-        }
+        Self { list, selection }
     }
 
     pub fn len(&self) -> usize {

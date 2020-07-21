@@ -4,9 +4,7 @@ struct Application {
 
 impl Application {
     fn new() -> Self {
-        Self {
-            enabled_ime: true,
-        }
+        Self { enabled_ime: true }
     }
 }
 
@@ -29,7 +27,12 @@ impl wita::EventHandler for Application {
         println!("ime start composition");
     }
 
-    fn ime_composition(&mut self, _: &wita::Window, comp: &wita::ime::Composition, candidate: Option<&wita::ime::CandidateList>) {
+    fn ime_composition(
+        &mut self,
+        _: &wita::Window,
+        comp: &wita::ime::Composition,
+        candidate: Option<&wita::ime::CandidateList>,
+    ) {
         println!("ime composition: {:?} {:?}", comp, candidate);
     }
 

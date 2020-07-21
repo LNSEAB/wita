@@ -1,4 +1,4 @@
-use crate::{device::*, window::Window, ime::*, geometry::*};
+use crate::{device::*, geometry::*, ime::*, window::Window};
 
 pub trait EventHandler {
     fn idle(&mut self) {}

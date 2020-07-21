@@ -174,15 +174,19 @@ impl Imc {
             let mut buf: Vec<u8> = Vec::with_capacity(len);
             buf.set_len(len);
             ImmGetCompositionStringW(himc, GCS_COMPATTR, buf.as_mut_ptr() as *mut _, byte_len as DWORD);
-            Some(buf.into_iter().map(|v| match v {
-                ATTR_INPUT => ime::Attribute::Input,
-                ATTR_TARGET_CONVERTED => ime::Attribute::TargetConverted,
-                ATTR_CONVERTED => ime::Attribute::Converted,
-                ATTR_TARGET_NOTCONVERTED => ime::Attribute::TargetNotConverted,
-                ATTR_INPUT_ERROR => ime::Attribute::Error,
-                ATTR_FIXEDCONVERTED => ime::Attribute::FixedConverted,
-                _ => unreachable!(),
-            }).collect::<Vec<_>>())
+            Some(
+                buf.into_iter()
+                    .map(|v| match v {
+                        ATTR_INPUT => ime::Attribute::Input,
+                        ATTR_TARGET_CONVERTED => ime::Attribute::TargetConverted,
+                        ATTR_CONVERTED => ime::Attribute::Converted,
+                        ATTR_TARGET_NOTCONVERTED => ime::Attribute::TargetNotConverted,
+                        ATTR_INPUT_ERROR => ime::Attribute::Error,
+                        ATTR_FIXEDCONVERTED => ime::Attribute::FixedConverted,
+                        _ => unreachable!(),
+                    })
+                    .collect::<Vec<_>>(),
+            )
         }
 
         unsafe {
@@ -190,7 +194,7 @@ impl Imc {
                 GCS_COMPSTR => get_string(self.himc, GCS_COMPSTR).map(|s| CompositionString::CompStr(s)),
                 GCS_COMPATTR => get_attrs(self.himc).map(|v| CompositionString::CompAttr(v)),
                 GCS_RESULTSTR => get_string(self.himc, GCS_RESULTSTR).map(|s| CompositionString::ResultStr(s)),
-                _ => None
+                _ => None,
             }
         }
     }
@@ -216,10 +220,7 @@ impl Imc {
                 let slice = std::slice::from_raw_parts(p, len);
                 list.push(String::from_utf16_lossy(slice));
             }
-            Some(ime::CandidateList::new(
-                list,
-                obj.dwSelection as usize,
-            ))
+            Some(ime::CandidateList::new(list, obj.dwSelection as usize))
         }
     }
 }

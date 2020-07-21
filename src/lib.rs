@@ -3,9 +3,9 @@ mod context;
 mod device;
 mod event;
 mod geometry;
+pub mod ime;
 mod procedure;
 mod window;
-pub mod ime;
 
 pub use context::{Context, RunType};
 pub use device::*;
