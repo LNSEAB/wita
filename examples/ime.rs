@@ -45,8 +45,8 @@ fn main() {
     let context = wita::Context::new();
     let window = wita::WindowBuilder::new()
         .title("wita ime")
-        .visible_composition_window(true)
-        .visible_candidate_window(false)
+        .visible_ime_composition_window(true)
+        .visible_ime_candidate_window(false)
         .build(&context);
     window.set_ime_position(wita::LogicalPosition::new(100.0, 100.0));
     context.run(wita::RunType::Wait, Application::new());

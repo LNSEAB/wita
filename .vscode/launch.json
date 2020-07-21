@@ -36,6 +36,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build ime",
+		},
+		{
+			"name": "count",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/count.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build count",
 		}
 	]
 }

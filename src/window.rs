@@ -24,8 +24,10 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     inner_size: S,
     resizable: bool,
     visibility: bool,
-    visible_composition_window: bool,
-    visible_candidate_window: bool,
+    has_minimize_box: bool,
+    has_maximize_box: bool,
+    visible_ime_composition_window: bool,
+    visible_ime_candidate_window: bool,
 }
 
 impl WindowBuilder<(), ()> {
@@ -36,8 +38,10 @@ impl WindowBuilder<(), ()> {
             inner_size: LogicalSize::new(640.0, 480.0),
             resizable: true,
             visibility: true,
-            visible_composition_window: true,
-            visible_candidate_window: true,
+            has_minimize_box: true,
+            has_maximize_box: true,
+            visible_ime_composition_window: true,
+            visible_ime_candidate_window: true,
         }
     }
 }
@@ -50,8 +54,10 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             inner_size: self.inner_size,
             resizable: self.resizable,
             visibility: self.visibility,
-            visible_composition_window: self.visible_composition_window,
-            visible_candidate_window: self.visible_candidate_window,
+            has_minimize_box: self.has_minimize_box,
+            has_maximize_box: self.has_maximize_box,
+            visible_ime_composition_window: self.visible_ime_composition_window,
+            visible_ime_candidate_window: self.visible_ime_candidate_window,
         }
     }
 
@@ -67,8 +73,10 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             inner_size,
             resizable: self.resizable,
             visibility: self.visibility,
-            visible_composition_window: self.visible_composition_window,
-            visible_candidate_window: self.visible_candidate_window,
+            has_minimize_box: self.has_minimize_box,
+            has_maximize_box: self.has_maximize_box,
+            visible_ime_composition_window: self.visible_ime_composition_window,
+            visible_ime_candidate_window: self.visible_ime_candidate_window,
         }
     }
 
@@ -82,13 +90,23 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self
     }
 
-    pub fn visible_composition_window(mut self, show_composition_window: bool) -> WindowBuilder<Ti, S> {
-        self.visible_composition_window = show_composition_window;
+    pub fn has_minimize_box(mut self, has_minimize_box: bool) -> WindowBuilder<Ti, S> {
+        self.has_minimize_box = has_minimize_box;
         self
     }
 
-    pub fn visible_candidate_window(mut self, show_cadidate_window: bool) -> WindowBuilder<Ti, S> {
-        self.visible_candidate_window = show_cadidate_window;
+    pub fn has_maximize_box(mut self, has_maximize_box: bool) -> WindowBuilder<Ti, S> {
+        self.has_maximize_box = has_maximize_box;
+        self
+    }
+
+    pub fn visible_ime_composition_window(mut self, show_ime_composition_window: bool) -> WindowBuilder<Ti, S> {
+        self.visible_ime_composition_window = show_ime_composition_window;
+        self
+    }
+
+    pub fn visible_ime_candidate_window(mut self, show_ime_cadidate_window: bool) -> WindowBuilder<Ti, S> {
+        self.visible_ime_candidate_window = show_ime_cadidate_window;
         self
     }
 }
@@ -128,9 +146,15 @@ where
     pub fn build(self, context: &Context) -> Window {
         let class_name = register_class();
         let title = self.title.as_ref().encode_utf16().chain(Some(0)).collect::<Vec<_>>();
-        let mut style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+        let mut style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION;
         if self.resizable {
             style |= WS_THICKFRAME;
+        }
+        if self.has_minimize_box {
+            style |= WS_MINIMIZEBOX;
+        }
+        if self.has_maximize_box {
+            style |= WS_MAXIMIZEBOX;
         }
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
@@ -157,8 +181,8 @@ where
             let window = Window::new(
                 hwnd,
                 WindowState {
-                    visible_composition_window: self.visible_composition_window,
-                    visible_candidate_window: self.visible_candidate_window,
+                    visible_composition_window: self.visible_ime_composition_window,
+                    visible_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
                     ime_context: ImmContext::new(hwnd),
                 },
