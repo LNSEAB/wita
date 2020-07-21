@@ -1,7 +1,14 @@
-use crate::{api::*, context::*, device::*, geometry::*, window::Window};
+use crate::{api::*, context::*, device::*, geometry::*, window::Window, ime};
 use std::panic::catch_unwind;
 use winapi::shared::{minwindef::*, windef::*, windowsx::*};
 use winapi::um::winuser::*;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(usize)]
+pub(crate) enum UserMessage {
+    EnableIme,
+    DisableIme,
+}
 
 fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<f32> {
     PhysicalPosition::new(GET_X_LPARAM(lparam) as f32, GET_Y_LPARAM(lparam) as f32)
@@ -171,6 +178,12 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             WM_XBUTTONUP => mouse_input(&window, wparam_to_button(wparam), KeyState::Released, wparam, lparam),
             WM_KEYDOWN => key_input(&window, KeyState::Pressed, wparam, lparam),
             WM_KEYUP => key_input(&window, KeyState::Released, wparam, lparam),
+            WM_CHAR => {
+                call_handler(|eh, _| {
+                    std::char::from_u32(wparam as u32).map(|c| eh.char_input(&window, c));
+                });
+                0
+            }
             WM_IME_SETCONTEXT => {
                 let lparam = {
                     let state = window.state.read().unwrap();
@@ -206,13 +219,17 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 call_handler(|eh, _| {
                     let imc = Imc::get(hwnd);
                     if lparam & GCS_COMPSTR as LPARAM != 0 {
-                        if let Some(s) = imc.get_composition_string(GCS_COMPSTR) {
-                            eh.ime_composition(&window, &s);
+                        if let Some(CompositionString::CompStr(s)) = imc.get_composition_string(GCS_COMPSTR) {
+                            if let Some(CompositionString::CompAttr(attrs)) = imc.get_composition_string(GCS_COMPATTR) {
+                                eh.ime_composition(&window, &ime::Composition::new(s, attrs), imc.get_candidate_list().as_ref());
+                            }
                         }
                     }
                     if lparam & GCS_RESULTSTR as LPARAM != 0 {
-                        if let Some(s) = imc.get_composition_string(GCS_RESULTSTR) {
-                            eh.ime_composition(&window, &s);
+                        if let Some(CompositionString::ResultStr(s)) = imc.get_composition_string(GCS_RESULTSTR) {
+                            if let Some(CompositionString::CompAttr(attrs)) = imc.get_composition_string(GCS_COMPATTR) {
+                                eh.ime_composition(&window, &ime::Composition::new(s, attrs), None);
+                            }
                         }
                     }
                 });
@@ -230,7 +247,12 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 call_handler(|eh, _| {
                     let imc = Imc::get(hwnd);
                     let ret = imc.get_composition_string(GCS_RESULTSTR);
-                    eh.ime_end_composition(&window, ret.as_ref().map(|s| s.as_str()));
+                    let ret = if let Some(CompositionString::ResultStr(s)) = &ret {
+                        Some(s.as_str())
+                    } else {
+                        None
+                    };
+                    eh.ime_end_composition(&window, ret);
                 });
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
@@ -286,6 +308,20 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             WM_NCCREATE => {
                 EnableNonClientDpiScaling(hwnd);
                 DefWindowProcW(hwnd, msg, wparam, lparam)
+            }
+            WM_USER => {
+                match wparam {
+                    w if w == UserMessage::EnableIme as usize => {
+                        let state = window.state.read().unwrap();
+                        state.ime_context.enable();
+                    }
+                    w if w == UserMessage::DisableIme as usize => {
+                        let state = window.state.read().unwrap();
+                        state.ime_context.disable();
+                    }
+                    _ => unreachable!(),
+                }
+                0
             }
             _ => DefWindowProcW(hwnd, msg, wparam, lparam),
         }

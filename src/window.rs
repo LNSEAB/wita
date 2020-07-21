@@ -1,4 +1,4 @@
-use crate::{api::*, context::*, geometry::*, procedure::window_proc};
+use crate::{api::*, context::*, geometry::*, procedure::{window_proc, UserMessage}};
 use std::sync::{Arc, Once, RwLock};
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{
@@ -204,41 +204,6 @@ impl Window {
         }
     }
 
-    pub fn ime_position(&self) -> PhysicalPosition<f32> {
-        let state = self.state.read().unwrap();
-        PhysicalPosition {
-            x: state.ime_position.x as f32,
-            y: state.ime_position.y as f32,
-        }
-    }
-
-    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<f32>) {
-        let mut state = self.state.write().unwrap();
-        let position = position.to_physical(self.scale_factor());
-        state.ime_position.x = position.x as i32;
-        state.ime_position.y = position.y as i32;
-    }
-
-    pub fn visible_composition_window(&self) -> bool {
-        let state = self.state.read().unwrap();
-        state.visible_composition_window
-    }
-
-    pub fn set_visible_composition_window(&self, visibility: bool) {
-        let mut state = self.state.write().unwrap();
-        state.visible_composition_window = visibility;
-    }
-
-    pub fn visible_candidate_window(&self) -> bool {
-        let state = self.state.read().unwrap();
-        state.visible_candidate_window
-    }
-
-    pub fn set_visible_candidate_window(&self, visibility: bool) {
-        let mut state = self.state.write().unwrap();
-        state.visible_candidate_window = visibility;
-    }
-
     pub fn scale_factor(&self) -> f32 {
         unsafe { GetDpiForWindow(self.hwnd.0) as f32 / DEFAULT_DPI }
     }
@@ -257,5 +222,32 @@ impl Window {
 
     pub fn raw_handle(&self) -> *const std::ffi::c_void {
         self.hwnd.0 as _
+    }
+
+    pub fn ime_position(&self) -> PhysicalPosition<f32> {
+        let state = self.state.read().unwrap();
+        PhysicalPosition {
+            x: state.ime_position.x as f32,
+            y: state.ime_position.y as f32,
+        }
+    }
+
+    pub fn enable_ime(&self) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
+        }
+    }
+
+    pub fn disable_ime(&self) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
+        }
+    }
+
+    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<f32>) {
+        let mut state = self.state.write().unwrap();
+        let position = position.to_physical(self.scale_factor());
+        state.ime_position.x = position.x as i32;
+        state.ime_position.y = position.y as i32;
     }
 }

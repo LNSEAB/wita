@@ -38,6 +38,14 @@ impl EventHandler for Application {
     fn key_input(&mut self, _: &Window, code: KeyCode, state: KeyState) {
         println!("key input: {:?}, {:?}", code, state);
     }
+
+    fn char_input(&mut self, _: &Window, c: char) {
+        if c.is_control() || c.is_whitespace() {
+            println!("char input: 0x{:02x}", c as u16);
+        } else {
+            println!("char input: {}", c);
+        }
+    }
 }
 
 fn main() {
