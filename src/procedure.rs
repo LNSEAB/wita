@@ -188,10 +188,10 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 let lparam = {
                     let state = window.state.read().unwrap();
                     let mut lparam = lparam;
-                    if !state.visible_composition_window {
+                    if !state.visible_ime_composition_window {
                         lparam &= !ISC_SHOWUICOMPOSITIONWINDOW;
                     }
-                    if !state.visible_candidate_window {
+                    if !state.visible_ime_candidate_window {
                         lparam &= !ISC_SHOWUICANDIDATEWINDOW;
                         lparam &= !(ISC_SHOWUICANDIDATEWINDOW << 1);
                         lparam &= !(ISC_SHOWUICANDIDATEWINDOW << 2);
@@ -205,11 +205,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 call_handler(|eh, _| {
                     let imc = Imc::get(hwnd);
                     let state = window.state.read().unwrap();
-                    if state.visible_composition_window {
+                    if state.visible_ime_composition_window {
                         imc.set_composition_window_position(state.ime_position);
                     }
-                    if state.visible_candidate_window {
-                        imc.set_candidate_window_position(state.ime_position, state.visible_composition_window);
+                    if state.visible_ime_candidate_window {
+                        imc.set_candidate_window_position(state.ime_position, state.visible_ime_composition_window);
                     }
                     eh.ime_start_composition(&window);
                 });
@@ -239,7 +239,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 });
                 let show_composition_window = {
                     let state = window.state.read().unwrap();
-                    state.visible_composition_window
+                    state.visible_ime_composition_window
                 };
                 if show_composition_window {
                     DefWindowProcW(hwnd, msg, wparam, lparam)

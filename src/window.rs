@@ -181,8 +181,8 @@ where
             let window = Window::new(
                 hwnd,
                 WindowState {
-                    visible_composition_window: self.visible_ime_composition_window,
-                    visible_candidate_window: self.visible_ime_candidate_window,
+                    visible_ime_composition_window: self.visible_ime_composition_window,
+                    visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
                     ime_context: ImmContext::new(hwnd),
                 },
@@ -197,8 +197,8 @@ where
 }
 
 pub(crate) struct WindowState {
-    pub visible_composition_window: bool,
-    pub visible_candidate_window: bool,
+    pub visible_ime_composition_window: bool,
+    pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
     pub ime_context: ImmContext,
 }
