@@ -3,6 +3,16 @@ name = "wita"
 version = "0.1.0"
 authors = ["LNSEAB <691752+LNSEAB@users.noreply.github.com>"]
 edition = "2018"
+keywords = ["windows"]
+description = "A window library in Rust for Windows"
+license = "MIT/Apache-2.0"
+license-file = "LICENSE.md"
+readme = "README.md"
+repository = "https://github.com/LNSEAB/wita"
+documentation = "https://docs.rs/wita"
+
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
 winapi = { version = "0.3.9", features = [
