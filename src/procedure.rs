@@ -341,11 +341,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 match wparam {
                     w if w == UserMessage::SetPosition as usize => {
                         let state = window.state.read().unwrap();
-                        SetWindowPos(hwnd, std::ptr::null_mut(), state.set_position.x, state.set_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+                        SetWindowPos(hwnd, std::ptr::null_mut(), state.set_position.x, state.set_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
                         let state = window.state.read().unwrap();
-                        SetWindowPos(hwnd, std::ptr::null_mut(), 0, 0, state.set_inner_size.width as i32, state.set_inner_size.height as i32, SWP_NOZORDER | SWP_NOMOVE);
+                        SetWindowPos(hwnd, std::ptr::null_mut(), 0, 0, state.set_inner_size.width as i32, state.set_inner_size.height as i32, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
                     }
                     w if w == UserMessage::EnableIme as usize => {
                         let state = window.state.read().unwrap();
