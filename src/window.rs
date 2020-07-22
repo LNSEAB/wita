@@ -249,6 +249,12 @@ impl Window {
         }
     }
 
+    pub fn redraw(&self) {
+        unsafe {
+            InvalidateRect(self.hwnd.0, std::ptr::null_mut(), FALSE);
+        }
+    }
+
     pub fn raw_handle(&self) -> *const std::ffi::c_void {
         self.hwnd.0 as _
     }

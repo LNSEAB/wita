@@ -1,6 +1,10 @@
 struct Application;
 
 impl wita::EventHandler for Application {
+    fn draw(&mut self, _: &wita::Window) {
+        println!("draw");
+    }
+
     fn activated(&mut self, _: &wita::Window) {
         println!("activated");
     }

@@ -2,6 +2,7 @@ use crate::{device::*, geometry::*, ime::*, window::Window};
 
 pub trait EventHandler {
     fn idle(&mut self) {}
+    fn draw(&mut self, _: &Window) {}
     fn activated(&mut self, _: &Window) {}
     fn inactivated(&mut self, _: &Window) {}
     fn closed(&mut self, _: &Window) {}

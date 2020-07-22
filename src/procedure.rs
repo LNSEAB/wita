@@ -120,6 +120,15 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
         }
         let window = window.unwrap();
         match msg {
+            WM_PAINT => {
+                let mut ps = PAINTSTRUCT::default();
+                BeginPaint(hwnd, &mut ps);
+                call_handler(|eh, _| {
+                    eh.draw(&window);
+                });
+                EndPaint(hwnd, &ps);
+                0
+            }
             WM_MOUSEMOVE => {
                 call_handler(|eh, state| {
                     let position = lparam_to_point(lparam).to_logical(window.scale_factor());
@@ -274,9 +283,10 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 call_handler(|eh, _| eh.resized(&window, size));
                 0
             }
-            WM_MOVE => {
-                call_handler(|eh, _| eh.moved(&window, window.position()));
-                0
+            WM_WINDOWPOSCHANGED => {
+                let pos = &*(lparam as *const WINDOWPOS);
+                call_handler(|eh, _| eh.moved(&window, ScreenPosition::new(pos.x, pos.y)));
+                DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_DPICHANGED => {
                 let rc = *(lparam as *const RECT);
