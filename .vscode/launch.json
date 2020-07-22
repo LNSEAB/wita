@@ -48,6 +48,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build count",
+		},
+		{
+			"name": "window_params",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/window_params.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build window_params",
 		}
 	]
 }

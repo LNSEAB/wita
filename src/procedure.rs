@@ -6,6 +6,8 @@ use winapi::um::winuser::*;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(usize)]
 pub(crate) enum UserMessage {
+    SetPosition,
+    SetInnerSize,
     EnableIme,
     DisableIme,
 }
@@ -337,6 +339,14 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_USER => {
                 match wparam {
+                    w if w == UserMessage::SetPosition as usize => {
+                        let state = window.state.read().unwrap();
+                        SetWindowPos(hwnd, std::ptr::null_mut(), state.set_position.x, state.set_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+                    }
+                    w if w == UserMessage::SetInnerSize as usize => {
+                        let state = window.state.read().unwrap();
+                        SetWindowPos(hwnd, std::ptr::null_mut(), 0, 0, state.set_inner_size.width as i32, state.set_inner_size.height as i32, SWP_NOZORDER | SWP_NOMOVE);
+                    }
                     w if w == UserMessage::EnableIme as usize => {
                         let state = window.state.read().unwrap();
                         state.ime_context.enable();

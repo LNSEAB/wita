@@ -158,8 +158,9 @@ where
         }
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
+            let inner_size = self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI);
             let rc = adjust_window_rect(
-                self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI),
+                inner_size,
                 WS_OVERLAPPEDWINDOW,
                 0,
                 dpi,
@@ -181,6 +182,8 @@ where
             let window = Window::new(
                 hwnd,
                 WindowState {
+                    set_position: self.position,
+                    set_inner_size: inner_size,
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
@@ -197,6 +200,8 @@ where
 }
 
 pub(crate) struct WindowState {
+    pub set_position: ScreenPosition,
+    pub set_inner_size: PhysicalSize<f32>,
     pub visible_ime_composition_window: bool,
     pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
@@ -225,11 +230,27 @@ impl Window {
         }
     }
 
+    pub fn set_position(&self, position: ScreenPosition) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.set_position = position;
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetPosition as usize, 0);
+        }
+    }
+
     pub fn inner_size(&self) -> PhysicalSize<f32> {
         unsafe {
             let mut rc = RECT::default();
             GetClientRect(self.hwnd.0, &mut rc);
             PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32)
+        }
+    }
+
+    pub fn set_inner_size(&self, size: impl ToPhysicalSize<f32>) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.set_inner_size = size.to_physical(self.scale_factor());
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
         }
     }
 
