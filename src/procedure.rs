@@ -285,7 +285,9 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_WINDOWPOSCHANGED => {
                 let pos = &*(lparam as *const WINDOWPOS);
-                call_handler(|eh, _| eh.moved(&window, ScreenPosition::new(pos.x, pos.y)));
+                if pos.flags & SWP_NOMOVE == 0 {
+                    call_handler(|eh, _| eh.moved(&window, ScreenPosition::new(pos.x, pos.y)));
+                }
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_DPICHANGED => {
