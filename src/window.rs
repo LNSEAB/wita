@@ -131,7 +131,9 @@ fn register_class() -> &'static Vec<u16> {
                 lpszClassName: class_name.as_ptr(),
                 hIconSm: std::ptr::null_mut(),
             };
-            RegisterClassExW(&wc);
+            if RegisterClassExW(&wc) == 0 {
+                panic!("cannot register the window class");
+            }
             WINDOW_CLASS_NAME = class_name;
         });
         &WINDOW_CLASS_NAME
@@ -179,6 +181,9 @@ where
                 GetModuleHandleW(std::ptr::null_mut()),
                 std::ptr::null_mut(),
             );
+            if hwnd == std::ptr::null_mut() {
+                panic!("cannot create the window");
+            }
             let window = Window::new(
                 hwnd,
                 WindowState {
