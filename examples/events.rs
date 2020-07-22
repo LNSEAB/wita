@@ -29,7 +29,13 @@ impl wita::EventHandler for Application {
         println!("dpi changed: {}", window.scale_factor());
     }
 
-    fn mouse_input(&mut self, _: &wita::Window, button: wita::MouseButton, button_state: wita::KeyState, mouse_state: wita::MouseState) {
+    fn mouse_input(
+        &mut self,
+        _: &wita::Window,
+        button: wita::MouseButton,
+        button_state: wita::KeyState,
+        mouse_state: wita::MouseState,
+    ) {
         println!("mouse_input: {:?}, {:?}, {:?}", button, button_state, mouse_state);
     }
 

@@ -9,7 +9,13 @@ impl Application {
 }
 
 impl wita::EventHandler for Application {
-    fn mouse_input(&mut self, _: &wita::Window, button: wita::MouseButton, button_state: wita::KeyState, _: wita::MouseState) {
+    fn mouse_input(
+        &mut self,
+        _: &wita::Window,
+        button: wita::MouseButton,
+        button_state: wita::KeyState,
+        _: wita::MouseState,
+    ) {
         if button == wita::MouseButton::Left && button_state == wita::KeyState::Pressed {
             self.count += 1;
             println!("count = {}", self.count);
