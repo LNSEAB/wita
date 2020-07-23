@@ -53,7 +53,7 @@
 //! ```
 //!
 //! # Drawing on the window
-//! There are directly no any methods for drawing on a [`Window`].
+//! There are directly no any methods for drawing on a [`Window`] in 'wita'.
 //! However, a [`Window`] provides the [`raw_handle`] that return a pointer which is `HWND`.
 //! You can create a drawing context by using the [`raw_handle`] such as DirectX, Vulkan, etc.
 //!

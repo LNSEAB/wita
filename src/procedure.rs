@@ -328,6 +328,10 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 TRUE as LRESULT
             }
             WM_DESTROY => {
+                {
+                    let mut state = window.state.write().unwrap();
+                    state.closed = true;
+                }
                 call_handler(|eh, _| eh.closed(&window));
                 if root_window().map_or(true, |wnd| wnd.raw_handle() == hwnd as *const std::ffi::c_void) {
                     PostQuitMessage(0);

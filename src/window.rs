@@ -189,6 +189,7 @@ where
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
                     ime_context: ImmContext::new(hwnd),
+                    closed: false,
                 },
             );
             if self.visibility {
@@ -207,6 +208,7 @@ pub(crate) struct WindowState {
     pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
     pub ime_context: ImmContext,
+    pub closed: bool,
 }
 
 /// Represents a window.
@@ -275,6 +277,17 @@ impl Window {
     pub fn redraw(&self) {
         unsafe {
             InvalidateRect(self.hwnd.0, std::ptr::null_mut(), FALSE);
+        }
+    }
+
+    pub fn is_closed(&self) -> bool {
+        let state = self.state.read().unwrap();
+        state.closed
+    }
+
+    pub fn close(&self) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
         }
     }
 
