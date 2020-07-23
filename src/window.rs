@@ -29,6 +29,8 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     has_maximize_box: bool,
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
+    parent: Option<Window>,
+    children: Vec<Window>,
 }
 
 impl WindowBuilder<(), ()> {
@@ -43,6 +45,8 @@ impl WindowBuilder<(), ()> {
             has_maximize_box: true,
             visible_ime_composition_window: true,
             visible_ime_candidate_window: true,
+            parent: None,
+            children: Vec::new(),
         }
     }
 }
@@ -59,6 +63,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             has_maximize_box: self.has_maximize_box,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
+            parent: self.parent,
+            children: self.children,
         }
     }
 
@@ -78,6 +84,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             has_maximize_box: self.has_maximize_box,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
+            parent: self.parent,
+            children: self.children,
         }
     }
 
@@ -108,6 +116,23 @@ impl<Ti, S> WindowBuilder<Ti, S> {
 
     pub fn visible_ime_candidate_window(mut self, show_ime_cadidate_window: bool) -> WindowBuilder<Ti, S> {
         self.visible_ime_candidate_window = show_ime_cadidate_window;
+        self
+    }
+
+    pub fn parent(mut self, parent: &Window) -> WindowBuilder<Ti, S> {
+        self.parent = Some(parent.clone());
+        self
+    }
+
+    pub fn child(mut self, child: &Window) -> WindowBuilder<Ti, S> {
+        self.children.push(child.clone());
+        self
+    }
+
+    pub fn children(mut self, children: &[&Window]) -> WindowBuilder<Ti, S> {
+        for &c in children {
+            self.children.push(c.clone());
+        }
         self
     }
 }
@@ -183,6 +208,7 @@ where
             let window = Window::new(
                 hwnd,
                 WindowState {
+                    title: self.title.as_ref().to_string(),
                     set_position: self.position,
                     set_inner_size: inner_size,
                     visible_ime_composition_window: self.visible_ime_composition_window,
@@ -190,8 +216,13 @@ where
                     ime_position: PhysicalPosition::new(0, 0),
                     ime_context: ImmContext::new(hwnd),
                     closed: false,
+                    children: self.children,
                 },
             );
+            if let Some(parent) = self.parent {
+                let mut state = parent.state.write().unwrap();
+                state.children.push(window.clone());
+            }
             if self.visibility {
                 window.show();
             }
@@ -202,6 +233,7 @@ where
 }
 
 pub(crate) struct WindowState {
+    pub title: String,
     pub set_position: ScreenPosition,
     pub set_inner_size: PhysicalSize<f32>,
     pub visible_ime_composition_window: bool,
@@ -209,6 +241,7 @@ pub(crate) struct WindowState {
     pub ime_position: PhysicalPosition<i32>,
     pub ime_context: ImmContext,
     pub closed: bool,
+    pub children: Vec<Window>,
 }
 
 /// Represents a window.
@@ -223,6 +256,19 @@ impl Window {
         Self {
             hwnd: WindowHandle(hwnd),
             state: Arc::new(RwLock::new(state)),
+        }
+    }
+
+    pub fn title(&self) -> String {
+        let state = self.state.read().unwrap();
+        state.title.clone()
+    }
+
+    pub fn set_title(&self, title: impl AsRef<str>) {
+        let mut state = self.state.write().unwrap();
+        state.title = title.as_ref().to_string();
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetTitle as usize, 0);
         }
     }
 
@@ -287,7 +333,9 @@ impl Window {
 
     pub fn close(&self) {
         unsafe {
-            PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
+            if !self.is_closed() {
+                PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
+            }
         }
     }
 

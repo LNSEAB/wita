@@ -6,6 +6,7 @@ use winapi::um::winuser::*;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(usize)]
 pub(crate) enum UserMessage {
+    SetTitle,
     SetPosition,
     SetInnerSize,
     EnableIme,
@@ -215,12 +216,14 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             WM_IME_STARTCOMPOSITION => {
                 call_handler(|eh, _| {
                     let imc = Imc::get(hwnd);
-                    let state = window.state.read().unwrap();
-                    if state.visible_ime_composition_window {
-                        imc.set_composition_window_position(state.ime_position);
-                    }
-                    if state.visible_ime_candidate_window {
-                        imc.set_candidate_window_position(state.ime_position, state.visible_ime_composition_window);
+                    {
+                        let state = window.state.read().unwrap();
+                        if state.visible_ime_composition_window {
+                            imc.set_composition_window_position(state.ime_position);
+                        }
+                        if state.visible_ime_candidate_window {
+                            imc.set_candidate_window_position(state.ime_position, state.visible_ime_composition_window);
+                        }
                     }
                     eh.ime_start_composition(&window);
                 });
@@ -332,10 +335,23 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     let mut state = window.state.write().unwrap();
                     state.closed = true;
                 }
-                call_handler(|eh, _| eh.closed(&window));
-                if root_window().map_or(true, |wnd| wnd.raw_handle() == hwnd as *const std::ffi::c_void) {
-                    PostQuitMessage(0);
-                }
+                call_handler(|eh, _| {
+                    eh.closed(&window);
+                    {
+                        let state = window.state.read().unwrap();
+                        for child in &state.children {
+                            child.close();
+                        }
+                    }
+                    manage_window_table(|window_table| {
+                        window_table.remove(
+                            window_table.iter().position(|elem| elem.0 == window.raw_handle() as HWND).unwrap()
+                        );
+                        if window_table.is_empty() {
+                            PostQuitMessage(0);
+                        }
+                    });
+                });
                 0
             }
             WM_NCCREATE => {
@@ -344,6 +360,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_USER => {
                 match wparam {
+                    w if w == UserMessage::SetTitle as usize => {
+                        let state = window.state.read().unwrap();
+                        let s = state.title.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+                        SetWindowTextW(hwnd, s.as_ptr());
+                    }
                     w if w == UserMessage::SetPosition as usize => {
                         let state = window.state.read().unwrap();
                         SetWindowPos(

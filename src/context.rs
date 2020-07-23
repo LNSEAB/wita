@@ -34,8 +34,8 @@ impl ContextState {
 
 pub(crate) struct ContextImpl {
     event_handler: RefCell<Option<Box<dyn EventHandler>>>,
-    window_table: RefCell<Vec<(HWND, Window)>>,
     state: RefCell<ContextState>,
+    window_table: RefCell<Vec<(HWND, Window)>>,
     unwind: RefCell<Option<Box<dyn std::any::Any + Send>>>,
 }
 
@@ -43,8 +43,8 @@ impl ContextImpl {
     fn new() -> Self {
         Self {
             event_handler: RefCell::new(None),
-            window_table: RefCell::new(Vec::new()),
             state: RefCell::new(ContextState::new()),
+            window_table: RefCell::new(Vec::new()),
             unwind: RefCell::new(None),
         }
     }
@@ -93,18 +93,18 @@ pub(crate) fn call_handler(f: impl FnOnce(&mut Box<dyn EventHandler>, &mut Conte
     })
 }
 
-pub(crate) fn root_window() -> Option<Window> {
-    CONTEXT.with(|context| {
-        let context = context.borrow();
-        let window_table = context.as_ref().unwrap().window_table.borrow();
-        window_table.first().map(|elem| elem.1.clone())
-    })
-}
-
 pub(crate) fn set_unwind(payload: Box<dyn std::any::Any + Send>) {
     CONTEXT.with(|context| {
         let context = context.borrow();
         *context.as_ref().unwrap().unwind.borrow_mut() = Some(payload);
+    });
+}
+
+pub(crate) fn manage_window_table(f: impl FnOnce(&mut Vec<(HWND, Window)>)) {
+    CONTEXT.with(|context| {
+        let context = context.borrow();
+        let mut window_table = context.as_ref().unwrap().window_table.borrow_mut();
+        f(&mut window_table);
     });
 }
 

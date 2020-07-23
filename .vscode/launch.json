@@ -60,6 +60,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build window_params",
+		},
+		{
+			"name": "children",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/children.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build children",
 		}
 	]
 }

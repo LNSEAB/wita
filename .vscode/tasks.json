@@ -85,6 +85,23 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build children",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "children"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

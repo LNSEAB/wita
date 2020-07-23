@@ -44,8 +44,6 @@ pub trait EventHandler {
     fn key_input(&mut self, _: &Window, _: KeyCode, _: KeyState) {}
 
     /// This is called when the keyboard key has been inputed the character.
-    ///
-    /// When the IME can start composition, this function is not called.
     fn char_input(&mut self, _: &Window, _: char) {}
 
     /// This is called when the IME starts composition.
