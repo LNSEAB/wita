@@ -11,6 +11,7 @@ pub(crate) enum UserMessage {
     SetInnerSize,
     EnableIme,
     DisableIme,
+    SetStyle,
 }
 
 fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<f32> {
@@ -345,7 +346,10 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     }
                     manage_window_table(|window_table| {
                         window_table.remove(
-                            window_table.iter().position(|elem| elem.0 == window.raw_handle() as HWND).unwrap()
+                            window_table
+                                .iter()
+                                .position(|elem| elem.0 == window.raw_handle() as HWND)
+                                .unwrap(),
                         );
                         if window_table.is_empty() {
                             PostQuitMessage(0);
@@ -402,6 +406,29 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     w if w == UserMessage::DisableIme as usize => {
                         let state = window.state.read().unwrap();
                         state.ime_context.disable();
+                    }
+                    w if w == UserMessage::SetStyle as usize => {
+                        let style = {
+                            let state = window.state.read().unwrap();
+                            state.style
+                        };
+                        let rc = adjust_window_rect(
+                            window.inner_size().to_physical(window.scale_factor()),
+                            style,
+                            0,
+                            GetDpiForWindow(hwnd),
+                        );
+                        SetWindowLongPtrW(hwnd, GWL_STYLE, style as isize);
+                        SetWindowPos(
+                            hwnd,
+                            std::ptr::null_mut(),
+                            0,
+                            0,
+                            rc.right - rc.left,
+                            rc.bottom - rc.top,
+                            SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED,
+                        );
+                        ShowWindow(hwnd, SW_SHOW);
                     }
                     _ => unreachable!(),
                 }

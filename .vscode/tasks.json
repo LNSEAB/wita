@@ -102,6 +102,23 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build borderless",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "borderless"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

@@ -28,9 +28,12 @@ fn main() {
     let _window = wita::WindowBuilder::new()
         .title("wita count")
         .inner_size(wita::LogicalSize::new(256.0, 256.0))
-        .resizable(false)
-        .has_minimize_box(false)
-        .has_maximize_box(false)
+        .style(
+            wita::WindowStyle::default()
+                .resizable(false)
+                .has_minimize_box(false)
+                .has_maximize_box(false),
+        )
         .build(&context);
     context.run(wita::RunType::Wait, Application::new());
 }

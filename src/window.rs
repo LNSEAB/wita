@@ -18,15 +18,81 @@ pub(crate) struct WindowHandle(HWND);
 unsafe impl Send for WindowHandle {}
 unsafe impl Sync for WindowHandle {}
 
+/// A window style and the borderless window style.
+pub trait Style {
+    fn value(&self) -> DWORD;
+
+    fn is_borderless(&self) -> bool {
+        self.value() == WS_POPUP
+    }
+}
+
+/// Represents the borderless window style.
+pub struct BorderlessStyle;
+
+impl Style for BorderlessStyle {
+    fn value(&self) -> DWORD {
+        WS_POPUP
+    }
+}
+
+/// Represents a window style.
+pub struct WindowStyle(DWORD);
+
+impl WindowStyle {
+    pub fn default() -> Self {
+        Self(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
+    }
+
+    pub fn borderless() -> BorderlessStyle {
+        BorderlessStyle
+    }
+
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        if resizable {
+            self.0 |= WS_THICKFRAME;
+        } else {
+            self.0 &= !WS_THICKFRAME;
+        }
+        self
+    }
+
+    pub fn has_minimize_box(mut self, has_minimize_box: bool) -> Self {
+        if has_minimize_box {
+            self.0 |= WS_MINIMIZEBOX;
+        } else {
+            self.0 &= !WS_MINIMIZEBOX;
+        }
+        self
+    }
+
+    pub fn has_maximize_box(mut self, has_maximize_box: bool) -> Self {
+        if has_maximize_box {
+            self.0 |= WS_MAXIMIZEBOX;
+        } else {
+            self.0 &= !WS_MAXIMIZEBOX;
+        }
+        self
+    }
+
+    pub fn is_borderless(&self) -> bool {
+        self.value() == WS_POPUP
+    }
+}
+
+impl Style for WindowStyle {
+    fn value(&self) -> DWORD {
+        self.0
+    }
+}
+
 /// The object that allows you to build windows.
 pub struct WindowBuilder<Ti = (), S = ()> {
     title: Ti,
     position: ScreenPosition,
     inner_size: S,
-    resizable: bool,
     visibility: bool,
-    has_minimize_box: bool,
-    has_maximize_box: bool,
+    style: DWORD,
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
     parent: Option<Window>,
@@ -39,10 +105,8 @@ impl WindowBuilder<(), ()> {
             title: "",
             position: ScreenPosition::new(0, 0),
             inner_size: LogicalSize::new(640.0, 480.0),
-            resizable: true,
+            style: WindowStyle::default().value(),
             visibility: true,
-            has_minimize_box: true,
-            has_maximize_box: true,
             visible_ime_composition_window: true,
             visible_ime_candidate_window: true,
             parent: None,
@@ -57,10 +121,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             title,
             position: self.position,
             inner_size: self.inner_size,
-            resizable: self.resizable,
+            style: self.style,
             visibility: self.visibility,
-            has_minimize_box: self.has_minimize_box,
-            has_maximize_box: self.has_maximize_box,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
@@ -78,10 +140,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             title: self.title,
             position: self.position,
             inner_size,
-            resizable: self.resizable,
+            style: self.style,
             visibility: self.visibility,
-            has_minimize_box: self.has_minimize_box,
-            has_maximize_box: self.has_maximize_box,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
@@ -89,23 +149,13 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         }
     }
 
-    pub fn resizable(mut self, resizable: bool) -> WindowBuilder<Ti, S> {
-        self.resizable = resizable;
+    pub fn style(mut self, style: impl Style) -> WindowBuilder<Ti, S> {
+        self.style = style.value();
         self
     }
 
     pub fn visible(mut self, visibility: bool) -> WindowBuilder<Ti, S> {
         self.visibility = visibility;
-        self
-    }
-
-    pub fn has_minimize_box(mut self, has_minimize_box: bool) -> WindowBuilder<Ti, S> {
-        self.has_minimize_box = has_minimize_box;
-        self
-    }
-
-    pub fn has_maximize_box(mut self, has_maximize_box: bool) -> WindowBuilder<Ti, S> {
-        self.has_maximize_box = has_maximize_box;
         self
     }
 
@@ -174,16 +224,6 @@ where
     pub fn build(self, context: &Context) -> Window {
         let class_name = register_class();
         let title = self.title.as_ref().encode_utf16().chain(Some(0)).collect::<Vec<_>>();
-        let mut style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION;
-        if self.resizable {
-            style |= WS_THICKFRAME;
-        }
-        if self.has_minimize_box {
-            style |= WS_MINIMIZEBOX;
-        }
-        if self.has_maximize_box {
-            style |= WS_MAXIMIZEBOX;
-        }
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
             let inner_size = self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI);
@@ -192,7 +232,7 @@ where
                 0,
                 class_name.as_ptr(),
                 title.as_ptr(),
-                style,
+                self.style,
                 self.position.x,
                 self.position.y,
                 (rc.right - rc.left) as i32,
@@ -209,6 +249,7 @@ where
                 hwnd,
                 WindowState {
                     title: self.title.as_ref().to_string(),
+                    style: self.style,
                     set_position: self.position,
                     set_inner_size: inner_size,
                     visible_ime_composition_window: self.visible_ime_composition_window,
@@ -234,6 +275,7 @@ where
 
 pub(crate) struct WindowState {
     pub title: String,
+    pub style: DWORD,
     pub set_position: ScreenPosition,
     pub set_inner_size: PhysicalSize<f32>,
     pub visible_ime_composition_window: bool,
@@ -288,11 +330,11 @@ impl Window {
         }
     }
 
-    pub fn inner_size(&self) -> PhysicalSize<f32> {
+    pub fn inner_size(&self) -> LogicalSize<f32> {
         unsafe {
             let mut rc = RECT::default();
             GetClientRect(self.hwnd.0, &mut rc);
-            PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32)
+            PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32).to_logical(self.scale_factor())
         }
     }
 
@@ -368,5 +410,18 @@ impl Window {
         let position = position.to_physical(self.scale_factor());
         state.ime_position.x = position.x as i32;
         state.ime_position.y = position.y as i32;
+    }
+
+    pub fn style(&self) -> WindowStyle {
+        let state = self.state.read().unwrap();
+        WindowStyle(state.style as DWORD)
+    }
+
+    pub fn set_style(&self, style: impl Style) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.style = style.value();
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetStyle as usize, 0);
+        }
     }
 }

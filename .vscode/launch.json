@@ -72,6 +72,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build children",
+		},
+		{
+			"name": "borderless",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/borderless.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build borderless",
 		}
 	]
 }
