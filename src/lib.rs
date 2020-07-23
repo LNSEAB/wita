@@ -1,5 +1,8 @@
 //! A window library in Rust for Windows.
 //!
+//! `wita` is a library that create a window and run an event loop.
+//! It is only for Windows.
+//!
 //! # Example
 //!
 //! ```no_run
@@ -23,7 +26,7 @@
 //! You must implement [`EventHandler`] for the your defined object, and can handle events in the `impl EventHandler`.
 //!
 //! ```no_run
-//! struct Foo {};
+//! struct Foo {}
 //!
 //! impl Foo {
 //!     fn new() -> Self {
@@ -42,11 +45,22 @@
 //! Next, pass the your defined object to [`Context::run`].
 //!
 //! ```ignore
+//! let context = Context::new();
+//!
+//! // build the window here.
+//!
 //! context.run(wita::RunType::Wait, Foo::new());
 //! ```
 //!
+//! # Drawing on the window
+//! There are directly no any methods for drawing on a [`Window`].
+//! However, a [`Window`] provides the [`raw_handle`] that return a pointer which is `HWND`.
+//! You can create a drawing context by using the [`raw_handle`] such as DirectX, Vulkan, etc.
+//!
 //! [`EventHandler`]: trait.EventHandler.html
 //! [`Context::run`]: struct.Context.html#method.run
+//! [`Window`]: struct.Window.html
+//! [`raw_handle`]: struct.Window.html#method.raw_handle
 //!
 
 mod api;
