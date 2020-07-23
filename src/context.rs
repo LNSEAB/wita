@@ -12,6 +12,7 @@ thread_local! {
     static CONTEXT: RefCell<Option<Rc<ContextImpl>>> = RefCell::new(None);
 }
 
+/// Describes event loop types.
 pub enum RunType {
     Idle,
     Wait,
@@ -107,18 +108,22 @@ pub(crate) fn set_unwind(payload: Box<dyn std::any::Any + Send>) {
     });
 }
 
+/// The object that you need to use this library.
 pub struct Context(Rc<ContextImpl>);
 
 impl Context {
+    /// Create new context.
     pub fn new() -> Self {
         enable_dpi_awareness();
         CONTEXT.with(move |context| {
+            assert!(context.borrow().is_none());
             let new_context = Rc::new(ContextImpl::new());
             *context.borrow_mut() = Some(new_context.clone());
             Self(new_context)
         })
     }
 
+    /// Run the event loop.
     pub fn run(self, run_type: RunType, event_handler: impl EventHandler + 'static) {
         self.0.set_event_handler(event_handler);
         let mut msg = MSG::default();

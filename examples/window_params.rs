@@ -1,7 +1,7 @@
 struct Application;
 
 impl wita::EventHandler for Application {
-    fn resized(&mut self, _: &wita::Window, size: wita::PhysicalSize<f32>) {
+    fn resized(&mut self, _: &wita::Window, size: wita::LogicalSize<f32>) {
         println!("resized: {:?}", size);
     }
 
@@ -23,8 +23,6 @@ impl wita::EventHandler for Application {
 
 fn main() {
     let context = wita::Context::new();
-    let _window = wita::WindowBuilder::new()
-        .title("wita window params")
-        .build(&context);
+    let _window = wita::WindowBuilder::new().title("wita window params").build(&context);
     context.run(wita::RunType::Wait, Application);
 }

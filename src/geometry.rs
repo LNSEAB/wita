@@ -1,3 +1,4 @@
+/// A position in logical coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct LogicalPosition<T> {
     pub x: T,
@@ -10,6 +11,7 @@ impl<T> LogicalPosition<T> {
     }
 }
 
+/// A position in physical coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct PhysicalPosition<T> {
     pub x: T,
@@ -22,6 +24,7 @@ impl<T> PhysicalPosition<T> {
     }
 }
 
+/// A size in logical coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct LogicalSize<T> {
     pub width: T,
@@ -34,6 +37,7 @@ impl<T> LogicalSize<T> {
     }
 }
 
+/// A size in physical coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct PhysicalSize<T> {
     pub width: T,
@@ -46,18 +50,22 @@ impl<T> PhysicalSize<T> {
     }
 }
 
+/// Converts to a logical position.
 pub trait ToLogicalPosition<T> {
     fn to_logical(&self, scale: T) -> LogicalPosition<T>;
 }
 
+/// Converts to a physical position.
 pub trait ToPhysicalPosition<T> {
     fn to_physical(&self, scale: T) -> PhysicalPosition<T>;
 }
 
+/// Converts to a logical size.
 pub trait ToLogicalSize<T> {
     fn to_logical(&self, scale: T) -> LogicalSize<T>;
 }
 
+/// Converts to a physical size.
 pub trait ToPhysicalSize<T> {
     fn to_physical(&self, scale: T) -> PhysicalSize<T>;
 }
@@ -134,6 +142,7 @@ impl<T: Clone> ToPhysicalSize<T> for PhysicalSize<T> {
     }
 }
 
+/// A position in screen coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct ScreenPosition {
     pub x: i32,

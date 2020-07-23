@@ -1,3 +1,6 @@
+//! An IME composition string and a candidate list
+
+/// Describes composition character attributes.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Attribute {
     Input,
@@ -8,12 +11,14 @@ pub enum Attribute {
     FixedConverted,
 }
 
+/// A composition character and a composition attribute.
 #[derive(Debug)]
 pub struct CompositionChar {
     pub ch: char,
     pub attr: Attribute,
 }
 
+/// A composition string.
 #[derive(Debug)]
 pub struct Composition {
     chars: Vec<CompositionChar>,
@@ -58,6 +63,7 @@ impl std::ops::Index<usize> for Composition {
     }
 }
 
+/// A candidate list.
 #[derive(Debug)]
 pub struct CandidateList {
     list: Vec<String>,

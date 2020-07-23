@@ -18,6 +18,7 @@ pub(crate) struct WindowHandle(HWND);
 unsafe impl Send for WindowHandle {}
 unsafe impl Sync for WindowHandle {}
 
+/// The object that allows you to build windows.
 pub struct WindowBuilder<Ti = (), S = ()> {
     title: Ti,
     position: ScreenPosition,
@@ -161,12 +162,7 @@ where
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
             let inner_size = self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI);
-            let rc = adjust_window_rect(
-                inner_size,
-                WS_OVERLAPPEDWINDOW,
-                0,
-                dpi,
-            );
+            let rc = adjust_window_rect(inner_size, WS_OVERLAPPEDWINDOW, 0, dpi);
             let hwnd = CreateWindowExW(
                 0,
                 class_name.as_ptr(),
@@ -213,6 +209,7 @@ pub(crate) struct WindowState {
     pub ime_context: ImmContext,
 }
 
+/// Represents a window.
 #[derive(Clone)]
 pub struct Window {
     hwnd: WindowHandle,

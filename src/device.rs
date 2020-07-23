@@ -1,12 +1,14 @@
 use crate::geometry::*;
 use serde::{Deserialize, Serialize};
 
+/// Describes the state of a keyboard key and a mouse button.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum KeyState {
     Pressed,
     Released,
 }
 
+/// Describes mouse buttons.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum MouseButton {
     Left,
@@ -15,12 +17,14 @@ pub enum MouseButton {
     Ex(u32),
 }
 
+/// A mouse cursor position and pressed mouse buttons.
 #[derive(Clone, Debug)]
 pub struct MouseState<'a> {
     pub position: LogicalPosition<f32>,
     pub buttons: &'a [MouseButton],
 }
 
+/// Describes keyboard key names.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub enum VirtualKey {
     Char(char),
@@ -57,9 +61,11 @@ pub enum VirtualKey {
     Other(u32),
 }
 
+/// A keyboard scan code
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct ScanCode(pub u32);
 
+/// A virtual key and a scan code.
 #[derive(Clone, Copy, Debug)]
 pub struct KeyCode {
     pub vkey: VirtualKey,

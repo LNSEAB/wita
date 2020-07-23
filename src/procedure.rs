@@ -133,7 +133,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_MOUSEMOVE => {
                 call_handler(|eh, state| {
-                    let position = lparam_to_point(lparam).to_logical(window.scale_factor());
+                    let position = lparam_to_point(lparam);
                     update_buttons(&mut state.mouse_buttons, wparam);
                     if state.entered_window.is_none() {
                         TrackMouseEvent(&mut TRACKMOUSEEVENT {
@@ -146,7 +146,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                         eh.cursor_entered(
                             &window,
                             MouseState {
-                                position,
+                                position: position.to_logical(window.scale_factor()),
                                 buttons: &state.mouse_buttons,
                             },
                         );
@@ -154,7 +154,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                         eh.cursor_moved(
                             &window,
                             MouseState {
-                                position,
+                                position: position.to_logical(window.scale_factor()),
                                 buttons: &state.mouse_buttons,
                             },
                         );
@@ -281,7 +281,8 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_SIZE => {
                 let value = lparam as DWORD;
-                let size = PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32);
+                let size =
+                    PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32).to_logical(window.scale_factor());
                 call_handler(|eh, _| eh.resized(&window, size));
                 0
             }
@@ -341,11 +342,33 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 match wparam {
                     w if w == UserMessage::SetPosition as usize => {
                         let state = window.state.read().unwrap();
-                        SetWindowPos(hwnd, std::ptr::null_mut(), state.set_position.x, state.set_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+                        SetWindowPos(
+                            hwnd,
+                            std::ptr::null_mut(),
+                            state.set_position.x,
+                            state.set_position.y,
+                            0,
+                            0,
+                            SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE,
+                        );
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
                         let state = window.state.read().unwrap();
-                        SetWindowPos(hwnd, std::ptr::null_mut(), 0, 0, state.set_inner_size.width as i32, state.set_inner_size.height as i32, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+                        let rc = adjust_window_rect(
+                            state.set_inner_size,
+                            GetWindowLongPtrW(hwnd, GWL_STYLE) as u32,
+                            GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32,
+                            GetDpiForWindow(hwnd),
+                        );
+                        SetWindowPos(
+                            hwnd,
+                            std::ptr::null_mut(),
+                            0,
+                            0,
+                            rc.right - rc.left,
+                            rc.bottom - rc.top,
+                            SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE,
+                        );
                     }
                     w if w == UserMessage::EnableIme as usize => {
                         let state = window.state.read().unwrap();

@@ -7,7 +7,6 @@ keywords = ["windows"]
 categories = ["GUI"]
 description = "A window library in Rust for Windows"
 license = "MIT/Apache-2.0"
-license-file = "LICENSE.md"
 readme = "README.md"
 repository = "https://github.com/LNSEAB/wita"
 documentation = "https://docs.rs/wita"

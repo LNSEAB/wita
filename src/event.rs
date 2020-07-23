@@ -1,21 +1,59 @@
 use crate::{device::*, geometry::*, ime::*, window::Window};
 
+/// Trait that must implements for handling events.
 pub trait EventHandler {
+    /// This is called when there are no events.
+    ///
+    /// only passed `RunType::Idle` to `Context::run`.
     fn idle(&mut self) {}
+
+    /// This is called when the window needs redrawing.
     fn draw(&mut self, _: &Window) {}
+
+    /// This is called when the window has been activated.
     fn activated(&mut self, _: &Window) {}
+
+    /// This is called when the window has been inactivated.
     fn inactivated(&mut self, _: &Window) {}
+
+    /// This is called when the window has been closed.
     fn closed(&mut self, _: &Window) {}
+
+    /// This is called when the window has been moved.
     fn moved(&mut self, _: &Window, _: ScreenPosition) {}
-    fn resized(&mut self, _: &Window, _: PhysicalSize<f32>) {}
+
+    /// This is called when the window has been resized.
+    fn resized(&mut self, _: &Window, _: LogicalSize<f32>) {}
+
+    /// This is called when the window's DPI has been changed.
     fn dpi_changed(&mut self, _: &Window) {}
+
+    /// This is called when the mouse button has been pressed and released on the window.
     fn mouse_input(&mut self, _: &Window, _: MouseButton, _: KeyState, _: MouseState) {}
+
+    /// This is called when the cursor has been moved on the window.
     fn cursor_moved(&mut self, _: &Window, _: MouseState) {}
+
+    /// This is called when the cursor has been entered the window.
     fn cursor_entered(&mut self, _: &Window, _: MouseState) {}
+
+    /// This is called when the cursor has been leaved the window.
     fn cursor_leaved(&mut self, _: &Window, _: MouseState) {}
+
+    /// This is called when the keyboard key has been pressed and released.
     fn key_input(&mut self, _: &Window, _: KeyCode, _: KeyState) {}
+
+    /// This is called when the keyboard key has been inputed the character.
+    ///
+    /// When the IME can start composition, this function is not called.
     fn char_input(&mut self, _: &Window, _: char) {}
+
+    /// This is called when the IME starts composition.
     fn ime_start_composition(&mut self, _: &Window) {}
+
+    /// This is called when the IME composition status has been changed.
     fn ime_composition(&mut self, _: &Window, _: &Composition, _: Option<&CandidateList>) {}
+
+    /// This is called when the IME ends composition.
     fn ime_end_composition(&mut self, _: &Window, _: Option<&str>) {}
 }
