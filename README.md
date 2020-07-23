@@ -14,7 +14,9 @@ impl wita::EventHandler for Application {
 
 fn main() {
     let context = wita::Context::new();
-    let _window = wita::WindowBuilder::new().title("hello, world!").build(&context);
+    let _window = wita::WindowBuilder::new()
+        .title("hello, world!")
+        .build(&context);
     context.run(wita::RunType::Wait, Application);
 }
 ```
