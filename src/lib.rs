@@ -71,7 +71,7 @@ mod device;
 mod event;
 mod geometry;
 pub mod ime;
-pub mod monitor;
+mod monitor;
 mod procedure;
 mod window;
 
@@ -79,5 +79,5 @@ pub use context::{Context, RunType};
 pub use device::*;
 pub use event::*;
 pub use geometry::*;
-pub use monitor::{get_monitors, monitor_from_point};
+pub use monitor::*;
 pub use window::*;
