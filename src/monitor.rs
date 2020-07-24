@@ -7,6 +7,7 @@ use winapi::um::{
 };
 use crate::geometry::*;
 
+/// Describes monitor info.
 #[derive(Clone, Debug)]
 pub struct Monitor {
     hmonitor: HMONITOR,
@@ -36,6 +37,7 @@ unsafe extern "system" fn get_monitors_proc(hmonitor: HMONITOR, _: HDC, rc: LPRE
     TRUE
 }
 
+/// Return monitors info.
 pub fn get_monitors() -> Vec<Monitor> {
     unsafe {
         let len = GetSystemMetrics(SM_CMONITORS) as usize;
@@ -45,6 +47,7 @@ pub fn get_monitors() -> Vec<Monitor> {
     }
 }
 
+/// A screen position to a monitor.
 pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
     unsafe {
         let hmonitor = MonitorFromPoint(POINT { x: point.x, y: point.y }, MONITOR_DEFAULTTONULL);
