@@ -8,9 +8,9 @@ use std::sync::{Arc, Once, RwLock};
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{
     libloaderapi::GetModuleHandleW,
+    shellapi::*,
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
-    shellapi::*,
 };
 
 #[derive(Clone)]
@@ -440,7 +440,12 @@ impl Window {
 
     pub fn accept_drag_files(&self, enabled: bool) {
         unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::AcceptDragFiles as usize, (if enabled { TRUE } else { FALSE }) as LPARAM);
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                UserMessage::AcceptDragFiles as usize,
+                (if enabled { TRUE } else { FALSE }) as LPARAM,
+            );
         }
     }
 }

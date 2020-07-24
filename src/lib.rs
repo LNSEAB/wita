@@ -71,13 +71,13 @@ mod device;
 mod event;
 mod geometry;
 pub mod ime;
+pub mod monitor;
 mod procedure;
 mod window;
-pub mod monitor;
 
 pub use context::{Context, RunType};
 pub use device::*;
 pub use event::*;
 pub use geometry::*;
-pub use window::*;
 pub use monitor::{get_monitors, monitor_from_point};
+pub use window::*;
