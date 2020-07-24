@@ -119,6 +119,23 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build drop_files",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "drop_files"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

@@ -84,6 +84,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build borderless",
+		},
+		{
+			"name": "drop_files",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/drop_files.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build drop_files",
 		}
 	]
 }

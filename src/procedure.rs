@@ -1,7 +1,11 @@
 use crate::{api::*, context::*, device::*, geometry::*, ime, window::Window};
 use std::panic::catch_unwind;
+use std::path::PathBuf;
 use winapi::shared::{minwindef::*, windef::*, windowsx::*};
-use winapi::um::winuser::*;
+use winapi::um::{
+    winuser::*,
+    shellapi::*,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(usize)]
@@ -12,6 +16,7 @@ pub(crate) enum UserMessage {
     EnableIme,
     DisableIme,
     SetStyle,
+    AcceptDragFiles,
 }
 
 fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<f32> {
@@ -331,6 +336,26 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 ret.cy = rc.bottom - rc.top;
                 TRUE as LRESULT
             }
+            WM_DROPFILES => {
+                let hdrop = wparam as HDROP;
+                let file_count = DragQueryFileW(hdrop, UINT::MAX, std::ptr::null_mut(), 0);
+                let mut buffer = Vec::new();
+                let files = (0..file_count).map(|i| {
+                    let len = DragQueryFileW(hdrop, i, std::ptr::null_mut(), 0) as usize + 1;
+                    buffer.resize(len, 0);
+                    DragQueryFileW(hdrop, i, buffer.as_mut_ptr(), len as u32);
+                    buffer.pop();
+                    PathBuf::from(String::from_utf16_lossy(&buffer))
+                }).collect::<Vec<_>>();
+                let files_ref = files.iter().map(|pb| pb.as_path()).collect::<Vec<_>>();
+                let mut pt = POINT::default();
+                DragQueryPoint(hdrop, &mut pt);
+                call_handler(|eh, _| {
+                    eh.drop_files(&window, &files_ref, PhysicalPosition::new(pt.x as f32, pt.y as f32).to_logical(window.scale_factor()));
+                });
+                DragFinish(hdrop);
+                0
+            }
             WM_DESTROY => {
                 {
                     let mut state = window.state.write().unwrap();
@@ -429,6 +454,9 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                             SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED,
                         );
                         ShowWindow(hwnd, SW_SHOW);
+                    }
+                    w if w == UserMessage::AcceptDragFiles as usize => {
+                        DragAcceptFiles(hwnd, lparam as i32);
                     }
                     _ => unreachable!(),
                 }

@@ -23,6 +23,7 @@ winapi = { version = "0.3.9", features = [
 	"windowsx",
 	"imm",
 	"winerror",
+	"shellapi",
 	"impl-default",
 ] }
 serde = { version = "1.0.114", features = ["derive"] }

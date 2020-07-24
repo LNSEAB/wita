@@ -10,6 +10,7 @@ use winapi::um::{
     libloaderapi::GetModuleHandleW,
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
+    shellapi::*,
 };
 
 #[derive(Clone)]
@@ -97,6 +98,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     visible_ime_candidate_window: bool,
     parent: Option<Window>,
     children: Vec<Window>,
+    accept_drag_files: bool,
 }
 
 impl WindowBuilder<(), ()> {
@@ -111,6 +113,7 @@ impl WindowBuilder<(), ()> {
             visible_ime_candidate_window: true,
             parent: None,
             children: Vec::new(),
+            accept_drag_files: false,
         }
     }
 }
@@ -127,6 +130,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
             children: self.children,
+            accept_drag_files: self.accept_drag_files,
         }
     }
 
@@ -146,6 +150,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
             children: self.children,
+            accept_drag_files: self.accept_drag_files,
         }
     }
 
@@ -183,6 +188,11 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         for &c in children {
             self.children.push(c.clone());
         }
+        self
+    }
+
+    pub fn accept_drag_files(mut self, enabled: bool) -> WindowBuilder<Ti, S> {
+        self.accept_drag_files = enabled;
         self
     }
 }
@@ -266,6 +276,9 @@ where
             }
             if self.visibility {
                 window.show();
+            }
+            if self.accept_drag_files {
+                DragAcceptFiles(hwnd, TRUE);
             }
             context.window_table().push((hwnd, window.clone()));
             window
@@ -422,6 +435,12 @@ impl Window {
             let mut state = self.state.write().unwrap();
             state.style = style.value();
             PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetStyle as usize, 0);
+        }
+    }
+
+    pub fn accept_drag_files(&self, enabled: bool) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::AcceptDragFiles as usize, (if enabled { TRUE } else { FALSE }) as LPARAM);
         }
     }
 }

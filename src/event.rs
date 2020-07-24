@@ -1,4 +1,5 @@
 use crate::{device::*, geometry::*, ime::*, window::Window};
+use std::path::Path;
 
 /// Trait that must implements for handling events.
 pub trait EventHandler {
@@ -54,4 +55,7 @@ pub trait EventHandler {
 
     /// This is called when the IME ends composition.
     fn ime_end_composition(&mut self, _: &Window, _: Option<&str>) {}
+
+    /// This is called when files have been drop on the window.
+    fn drop_files(&mut self, _: &Window, _: &[&Path], _: LogicalPosition<f32>) {}
 }
