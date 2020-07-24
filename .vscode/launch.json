@@ -96,6 +96,18 @@
 			"environment": [],
 			"externalConsole": false,
 			"preLaunchTask": "build drop_files",
+		},
+		{
+			"name": "borderless_fullscreen",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/borderless_fullscreen.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build borderless_fullscreen",
 		}
 	]
 }

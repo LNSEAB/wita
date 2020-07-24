@@ -136,6 +136,23 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build borderless_fullscreen",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "borderless_fullscreen"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }
