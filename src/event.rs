@@ -23,6 +23,9 @@ pub trait EventHandler {
     /// This is called when the window has been moved.
     fn moved(&mut self, _: &Window, _: ScreenPosition) {}
 
+    /// This is called when the window is resizing.
+    fn resizing(&mut self, _: &Window, _: LogicalSize<f32>) {}
+
     /// This is called when the window has been resized.
     fn resized(&mut self, _: &Window, _: LogicalSize<f32>) {}
 

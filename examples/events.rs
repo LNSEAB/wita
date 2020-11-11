@@ -16,6 +16,10 @@ impl wita::EventHandler for Application {
     fn closed(&mut self, _: &wita::Window) {
         println!("closed");
     }
+    
+    fn resizing(&mut self, _: &wita::Window, size: wita::LogicalSize<f32>) {
+        println!("resizing: {:?}", size);
+    }
 
     fn resized(&mut self, _: &wita::Window, size: wita::LogicalSize<f32>) {
         println!("resized: {:?}", size);

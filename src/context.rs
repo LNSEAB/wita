@@ -1,5 +1,5 @@
 use crate::{device::*, event::EventHandler, window::Window};
-use std::cell::{RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 use std::panic::resume_unwind;
 use std::rc::Rc;
 use std::sync::Once;
@@ -36,6 +36,7 @@ pub(crate) struct ContextImpl {
     event_handler: RefCell<Option<Box<dyn EventHandler>>>,
     state: RefCell<ContextState>,
     window_table: RefCell<Vec<(HWND, Window)>>,
+    resizing: Cell<bool>,
     unwind: RefCell<Option<Box<dyn std::any::Any + Send>>>,
 }
 
@@ -45,8 +46,17 @@ impl ContextImpl {
             event_handler: RefCell::new(None),
             state: RefCell::new(ContextState::new()),
             window_table: RefCell::new(Vec::new()),
+            resizing: Cell::new(false),
             unwind: RefCell::new(None),
         }
+    }
+    
+    fn set_resizing_flag(&self, value: bool) {
+        self.resizing.set(value);
+    }
+
+    fn get_resizing_flag(&self) -> bool {
+        self.resizing.get()
     }
 
     fn set_event_handler(&self, event_handler: impl EventHandler + 'static) {
@@ -83,6 +93,20 @@ pub(crate) fn find_window(hwnd: HWND) -> Option<Window> {
         window_table
             .iter()
             .find_map(|(h, window)| if *h == hwnd { Some(window.clone()) } else { None })
+    })
+}
+
+pub(crate) fn set_resizing_flag(value: bool) {
+    CONTEXT.with(|context| {
+        let context = context.borrow();
+        context.as_ref().unwrap().set_resizing_flag(value);
+    });
+}
+
+pub(crate) fn get_resizing_flag() -> bool {
+    CONTEXT.with(|context| {
+        let context = context.borrow();
+        context.as_ref().unwrap().get_resizing_flag()
     })
 }
 

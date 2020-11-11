@@ -288,8 +288,12 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             WM_SIZE => {
                 let value = lparam as DWORD;
                 let size =
-                    PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32).to_logical(window.scale_factor());
-                call_handler(|eh, _| eh.resized(&window, size));
+                        PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32).to_logical(window.scale_factor());
+                if get_resizing_flag() {
+                    call_handler(|eh, _| eh.resizing(&window, size));
+                } else {
+                    call_handler(|eh, _| eh.resized(&window, size));
+                } 
                 0
             }
             WM_WINDOWPOSCHANGED => {
@@ -297,6 +301,16 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 if pos.flags & SWP_NOMOVE == 0 {
                     call_handler(|eh, _| eh.moved(&window, ScreenPosition::new(pos.x, pos.y)));
                 }
+                DefWindowProcW(hwnd, msg, wparam, lparam)
+            }
+            WM_ENTERSIZEMOVE => {
+                set_resizing_flag(true);
+                DefWindowProcW(hwnd, msg, wparam, lparam)
+            }
+            WM_EXITSIZEMOVE => {
+                set_resizing_flag(false);
+                let size = window.inner_size();
+                call_handler(|eh, _| eh.resized(&window, size));
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_DPICHANGED => {
