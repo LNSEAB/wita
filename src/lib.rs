@@ -123,4 +123,5 @@ pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
             }
         },
     }
+    destroy_context();
 }

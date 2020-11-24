@@ -149,3 +149,10 @@ pub fn maybe_resume_unwind() {
         }
     });
 }
+
+#[inline]
+pub fn destroy_context() {
+    CONTEXT.with(|ctx| {
+        *ctx.borrow_mut() = None;
+    })
+}
