@@ -5,8 +5,17 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```
 //! struct Application;
+//! 
+//! impl Application {
+//!     fn new() -> Self {
+//!         wita::WindowBuilder::new()
+//!             .title("hello, world!")
+//!             .build(&context);
+//!         Self
+//!     }
+//! }
 //!
 //! impl wita::EventHandler for Application {
 //!     fn closed(&mut self, _: &wita::Window) {
@@ -15,11 +24,8 @@
 //! }
 //!
 //! fn main() {
-//!     let context = wita::Context::new();
-//!     let _window = wita::WindowBuilder::new()
-//!         .title("hello, world!")
-//!         .build(&context);
-//!     context.run(wita::RunType::Wait, Application);
+//!     wita::initaizlie::<Application>();
+//!     wita::run(wita::RunType::Wait, Application);
 //! }
 //! ```
 //!
@@ -32,6 +38,7 @@
 //!
 //! impl Foo {
 //!     fn new() -> Self {
+//!         // 
 //!         Self {}
 //!     }
 //! }
@@ -44,24 +51,18 @@
 //!     }
 //! }
 //! ```
-//! Next, pass the your defined object to [`Context::run`].
+//! Next, pass the your defined object to [`run`].
 //!
-//! ```ignore
-//! let context = Context::new();
-//!
-//! // build the window here.
-//!
-//! context.run(wita::RunType::Wait, Foo::new());
+//! ```no_run
+//! wita::initialize::<Foo>();
+//! wita::run(wita::RunType::Wait, Foo::new());
 //! ```
 //!
 //! # Drawing on the window
-//! There are directly no any methods for drawing on a [`Window`] in 'wita'.
+//! There are directly no any methods for drawing on a [`Window`] in `wita`.
 //! However, a [`Window`] provides the [`raw_handle`] that return a pointer which is `HWND`.
 //! You can create a drawing context by using the [`raw_handle`] such as DirectX, Vulkan, etc.
 //!
-//! [`EventHandler`]: trait.EventHandler.html
-//! [`Context::run`]: struct.Context.html#method.run
-//! [`Window`]: struct.Window.html
 //! [`raw_handle`]: struct.Window.html#method.raw_handle
 //!
 
@@ -86,6 +87,7 @@ use context::*;
 use std::ptr::null_mut;
 use winapi::um::winuser::*;
 
+/// Initialize `wita`.
 pub fn initialize<T: EventHandler + 'static>() {
     api::enable_dpi_awareness();
     window::register_class::<T>();
@@ -93,6 +95,7 @@ pub fn initialize<T: EventHandler + 'static>() {
     context::create_context();
 }
 
+/// Run the event loop.
 pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
     set_event_handler(handler);
     let mut msg = MSG::default();
