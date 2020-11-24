@@ -1,4 +1,4 @@
-use crate::{api::*, context::*, device::*, geometry::*, ime, window::Window};
+use crate::{api::*, context::*, device::*, event::EventHandler, geometry::*, ime, window::Window};
 use std::panic::catch_unwind;
 use std::path::PathBuf;
 use winapi::shared::{minwindef::*, windef::*, windowsx::*};
@@ -48,22 +48,23 @@ fn update_buttons(buttons: &mut Vec<MouseButton>, wparam: WPARAM) {
     }
 }
 
-unsafe fn mouse_input(
+unsafe fn mouse_input<T: EventHandler + 'static>(
     window: &Window,
     button: MouseButton,
     button_state: KeyState,
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    call_handler(|eh, state| {
-        update_buttons(&mut state.mouse_buttons, wparam);
+    call_handler(|eh: &mut T, state| {
+        let mouse_buttons = &mut state.mouse_buttons;
+        update_buttons(mouse_buttons, wparam);
         eh.mouse_input(
             window,
             button,
             button_state,
             MouseState {
-                position: lparam_to_point(lparam).to_logical(window.scale_factor()),
-                buttons: &state.mouse_buttons,
+                position: lparam_to_point(lparam),
+                buttons: mouse_buttons,
             },
         );
     });
@@ -110,15 +111,29 @@ fn as_virtual_key(wparam: WPARAM) -> VirtualKey {
     }
 }
 
-fn key_input(window: &Window, state: KeyState, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+fn key_input<T: EventHandler + 'static>(
+    window: &Window,
+    state: KeyState,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
     let scan_code = ScanCode(((lparam >> 16) & 0x7f) as u32);
-    call_handler(|eh, _| {
-        eh.key_input(window, KeyCode::new(as_virtual_key(wparam), scan_code), state);
+    call_handler(|eh: &mut T, _| {
+        eh.key_input(
+            window,
+            KeyCode::new(as_virtual_key(wparam), scan_code),
+            state,
+        );
     });
     0
 }
 
-pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
+    hwnd: HWND,
+    msg: UINT,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
     let ret = catch_unwind(|| {
         let window = find_window(hwnd);
         if window.is_none() {
@@ -129,14 +144,12 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             WM_PAINT => {
                 let mut ps = PAINTSTRUCT::default();
                 BeginPaint(hwnd, &mut ps);
-                call_handler(|eh, _| {
-                    eh.draw(&window);
-                });
+                call_handler(|eh: &mut T, _| eh.draw(&window));
                 EndPaint(hwnd, &ps);
                 0
             }
             WM_MOUSEMOVE => {
-                call_handler(|eh, state| {
+                call_handler(|eh: &mut T, state| {
                     let position = lparam_to_point(lparam);
                     update_buttons(&mut state.mouse_buttons, wparam);
                     if state.entered_window.is_none() {
@@ -150,7 +163,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                         eh.cursor_entered(
                             &window,
                             MouseState {
-                                position: position.to_logical(window.scale_factor()),
+                                position,
                                 buttons: &state.mouse_buttons,
                             },
                         );
@@ -158,7 +171,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                         eh.cursor_moved(
                             &window,
                             MouseState {
-                                position: position.to_logical(window.scale_factor()),
+                                position,
                                 buttons: &state.mouse_buttons,
                             },
                         );
@@ -167,7 +180,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 0
             }
             WM_MOUSELEAVE => {
-                call_handler(|eh, state| {
+                call_handler(|eh: &mut T, state| {
                     state.entered_window = None;
                     update_buttons(&mut state.mouse_buttons, wparam);
                     let mut pos = POINT::default();
@@ -175,26 +188,73 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     eh.cursor_leaved(
                         &window,
                         MouseState {
-                            position: PhysicalPosition::new(pos.x as f32, pos.y as f32)
-                                .to_logical(window.scale_factor()),
+                            position: PhysicalPosition::new(pos.x as f32, pos.y as f32),
                             buttons: &mut state.mouse_buttons,
                         },
                     );
                 });
                 0
             }
-            WM_LBUTTONDOWN => mouse_input(&window, MouseButton::Left, KeyState::Pressed, wparam, lparam),
-            WM_RBUTTONDOWN => mouse_input(&window, MouseButton::Right, KeyState::Pressed, wparam, lparam),
-            WM_MBUTTONDOWN => mouse_input(&window, MouseButton::Middle, KeyState::Pressed, wparam, lparam),
-            WM_XBUTTONDOWN => mouse_input(&window, wparam_to_button(wparam), KeyState::Pressed, wparam, lparam),
-            WM_LBUTTONUP => mouse_input(&window, MouseButton::Left, KeyState::Released, wparam, lparam),
-            WM_RBUTTONUP => mouse_input(&window, MouseButton::Right, KeyState::Released, wparam, lparam),
-            WM_MBUTTONUP => mouse_input(&window, MouseButton::Middle, KeyState::Released, wparam, lparam),
-            WM_XBUTTONUP => mouse_input(&window, wparam_to_button(wparam), KeyState::Released, wparam, lparam),
-            WM_KEYDOWN => key_input(&window, KeyState::Pressed, wparam, lparam),
-            WM_KEYUP => key_input(&window, KeyState::Released, wparam, lparam),
+            WM_LBUTTONDOWN => mouse_input::<T>(
+                &window,
+                MouseButton::Left,
+                KeyState::Pressed,
+                wparam,
+                lparam,
+            ),
+            WM_RBUTTONDOWN => mouse_input::<T>(
+                &window,
+                MouseButton::Right,
+                KeyState::Pressed,
+                wparam,
+                lparam,
+            ),
+            WM_MBUTTONDOWN => mouse_input::<T>(
+                &window,
+                MouseButton::Middle,
+                KeyState::Pressed,
+                wparam,
+                lparam,
+            ),
+            WM_XBUTTONDOWN => mouse_input::<T>(
+                &window,
+                wparam_to_button(wparam),
+                KeyState::Pressed,
+                wparam,
+                lparam,
+            ),
+            WM_LBUTTONUP => mouse_input::<T>(
+                &window,
+                MouseButton::Left,
+                KeyState::Released,
+                wparam,
+                lparam,
+            ),
+            WM_RBUTTONUP => mouse_input::<T>(
+                &window,
+                MouseButton::Right,
+                KeyState::Released,
+                wparam,
+                lparam,
+            ),
+            WM_MBUTTONUP => mouse_input::<T>(
+                &window,
+                MouseButton::Middle,
+                KeyState::Released,
+                wparam,
+                lparam,
+            ),
+            WM_XBUTTONUP => mouse_input::<T>(
+                &window,
+                wparam_to_button(wparam),
+                KeyState::Released,
+                wparam,
+                lparam,
+            ),
+            WM_KEYDOWN => key_input::<T>(&window, KeyState::Pressed, wparam, lparam),
+            WM_KEYUP => key_input::<T>(&window, KeyState::Released, wparam, lparam),
             WM_CHAR => {
-                call_handler(|eh, _| {
+                call_handler(|eh: &mut T, _| {
                     std::char::from_u32(wparam as u32).map(|c| eh.char_input(&window, c));
                 });
                 0
@@ -217,27 +277,32 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_IME_STARTCOMPOSITION => {
-                call_handler(|eh, _| {
-                    let imc = Imc::get(hwnd);
-                    {
-                        let state = window.state.read().unwrap();
-                        if state.visible_ime_composition_window {
-                            imc.set_composition_window_position(state.ime_position);
-                        }
-                        if state.visible_ime_candidate_window {
-                            imc.set_candidate_window_position(state.ime_position, state.visible_ime_composition_window);
-                        }
-                    }
+                let imc = Imc::get(hwnd);
+                let state = window.state.read().unwrap();
+                if state.visible_ime_composition_window {
+                    imc.set_composition_window_position(state.ime_position);
+                }
+                if state.visible_ime_candidate_window {
+                    imc.set_candidate_window_position(
+                        state.ime_position,
+                        state.visible_ime_composition_window,
+                    );
+                }
+                call_handler(|eh: &mut T, _| {
                     eh.ime_start_composition(&window);
                 });
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_IME_COMPOSITION => {
-                call_handler(|eh, _| {
+                call_handler(|eh: &mut T, _| {
                     let imc = Imc::get(hwnd);
                     if lparam & GCS_COMPSTR as LPARAM != 0 {
-                        if let Some(CompositionString::CompStr(s)) = imc.get_composition_string(GCS_COMPSTR) {
-                            if let Some(CompositionString::CompAttr(attrs)) = imc.get_composition_string(GCS_COMPATTR) {
+                        if let Some(CompositionString::CompStr(s)) =
+                            imc.get_composition_string(GCS_COMPSTR)
+                        {
+                            if let Some(CompositionString::CompAttr(attrs)) =
+                                imc.get_composition_string(GCS_COMPATTR)
+                            {
                                 eh.ime_composition(
                                     &window,
                                     &ime::Composition::new(s, attrs),
@@ -247,8 +312,12 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                         }
                     }
                     if lparam & GCS_RESULTSTR as LPARAM != 0 {
-                        if let Some(CompositionString::ResultStr(s)) = imc.get_composition_string(GCS_RESULTSTR) {
-                            if let Some(CompositionString::CompAttr(attrs)) = imc.get_composition_string(GCS_COMPATTR) {
+                        if let Some(CompositionString::ResultStr(s)) =
+                            imc.get_composition_string(GCS_RESULTSTR)
+                        {
+                            if let Some(CompositionString::CompAttr(attrs)) =
+                                imc.get_composition_string(GCS_COMPATTR)
+                            {
                                 eh.ime_composition(&window, &ime::Composition::new(s, attrs), None);
                             }
                         }
@@ -265,7 +334,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 }
             }
             WM_IME_ENDCOMPOSITION => {
-                call_handler(|eh, _| {
+                call_handler(|eh: &mut T, _| {
                     let imc = Imc::get(hwnd);
                     let ret = imc.get_composition_string(GCS_RESULTSTR);
                     let ret = if let Some(CompositionString::ResultStr(s)) = &ret {
@@ -279,38 +348,41 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
             }
             WM_ACTIVATE => {
                 if (wparam & WA_ACTIVE as WPARAM) != 0 || (wparam & WA_CLICKACTIVE as WPARAM) != 0 {
-                    call_handler(|eh, _| eh.activated(&window));
+                    call_handler(|eh: &mut T, _| eh.activated(&window));
                 } else {
-                    call_handler(|eh, _| eh.inactivated(&window));
+                    call_handler(|eh: &mut T, _| eh.inactivated(&window));
                 }
                 0
             }
             WM_SIZE => {
                 let value = lparam as DWORD;
-                let size =
-                        PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32).to_logical(window.scale_factor());
-                if get_resizing_flag() {
-                    call_handler(|eh, _| eh.resizing(&window, size));
-                } else {
-                    call_handler(|eh, _| eh.resized(&window, size));
-                } 
+                let size = PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32);
+                call_handler(|eh: &mut T, state| {
+                    if state.resizing {
+                        eh.resizing(&window, size);
+                    } else {
+                        eh.resized(&window, size);
+                    }
+                });
                 0
             }
             WM_WINDOWPOSCHANGED => {
                 let pos = &*(lparam as *const WINDOWPOS);
                 if pos.flags & SWP_NOMOVE == 0 {
-                    call_handler(|eh, _| eh.moved(&window, ScreenPosition::new(pos.x, pos.y)));
+                    call_handler(|eh: &mut T, _| {
+                        eh.moved(&window, ScreenPosition::new(pos.x, pos.y))
+                    });
                 }
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_ENTERSIZEMOVE => {
-                set_resizing_flag(true);
+                context_mut(|ctx| ctx.state_mut().resizing = true);
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_EXITSIZEMOVE => {
-                set_resizing_flag(false);
+                context_mut(|ctx| ctx.state_mut().resizing = false);
                 let size = window.inner_size();
-                call_handler(|eh, _| eh.resized(&window, size));
+                call_handler(|eh: &mut T, _| eh.resized(&window, size));
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_DPICHANGED => {
@@ -324,7 +396,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     rc.bottom - rc.top,
                     SWP_NOZORDER | SWP_NOACTIVATE,
                 );
-                call_handler(|eh, _| eh.dpi_changed(&window));
+                call_handler(|eh: &mut T, _| eh.dpi_changed(&window));
                 0
             }
             WM_GETDPISCALEDSIZE => {
@@ -363,11 +435,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 let files_ref = files.iter().map(|pb| pb.as_path()).collect::<Vec<_>>();
                 let mut pt = POINT::default();
                 DragQueryPoint(hdrop, &mut pt);
-                call_handler(|eh, _| {
+                call_handler(|eh: &mut T, _| {
                     eh.drop_files(
                         &window,
                         &files_ref,
-                        PhysicalPosition::new(pt.x as f32, pt.y as f32).to_logical(window.scale_factor()),
+                        PhysicalPosition::new(pt.x as f32, pt.y as f32),
                     );
                 });
                 DragFinish(hdrop);
@@ -378,7 +450,7 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                     let mut state = window.state.write().unwrap();
                     state.closed = true;
                 }
-                call_handler(|eh, _| {
+                call_handler(|eh: &mut T, _| {
                     eh.closed(&window);
                     {
                         let state = window.state.read().unwrap();
@@ -386,18 +458,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                             child.close();
                         }
                     }
-                    manage_window_table(|window_table| {
-                        window_table.remove(
-                            window_table
-                                .iter()
-                                .position(|elem| elem.0 == window.raw_handle() as HWND)
-                                .unwrap(),
-                        );
-                        if window_table.is_empty() {
-                            PostQuitMessage(0);
-                        }
-                    });
                 });
+                remove_window(hwnd);
+                if window_table_is_empty() {
+                    PostQuitMessage(0);
+                }
                 0
             }
             WM_NCCREATE => {
@@ -408,7 +473,11 @@ pub(crate) unsafe extern "system" fn window_proc(hwnd: HWND, msg: UINT, wparam: 
                 match wparam {
                     w if w == UserMessage::SetTitle as usize => {
                         let state = window.state.read().unwrap();
-                        let s = state.title.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+                        let s = state
+                            .title
+                            .encode_utf16()
+                            .chain(Some(0))
+                            .collect::<Vec<_>>();
                         SetWindowTextW(hwnd, s.as_ptr());
                     }
                     w if w == UserMessage::SetPosition as usize => {

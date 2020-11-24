@@ -1,5 +1,12 @@
 struct Application;
 
+impl Application {
+    fn new() -> Self {
+        wita::WindowBuilder::new().title("wita events").build();
+        Self
+    }
+}
+
 impl wita::EventHandler for Application {
     fn draw(&mut self, _: &wita::Window) {
         println!("draw");
@@ -16,12 +23,12 @@ impl wita::EventHandler for Application {
     fn closed(&mut self, _: &wita::Window) {
         println!("closed");
     }
-    
-    fn resizing(&mut self, _: &wita::Window, size: wita::LogicalSize<f32>) {
+
+    fn resizing(&mut self, _: &wita::Window, size: wita::PhysicalSize<f32>) {
         println!("resizing: {:?}", size);
     }
 
-    fn resized(&mut self, _: &wita::Window, size: wita::LogicalSize<f32>) {
+    fn resized(&mut self, _: &wita::Window, size: wita::PhysicalSize<f32>) {
         println!("resized: {:?}", size);
     }
 
@@ -40,7 +47,10 @@ impl wita::EventHandler for Application {
         button_state: wita::KeyState,
         mouse_state: wita::MouseState,
     ) {
-        println!("mouse_input: {:?}, {:?}, {:?}", button, button_state, mouse_state);
+        println!(
+            "mouse_input: {:?}, {:?}, {:?}",
+            button, button_state, mouse_state
+        );
     }
 
     fn cursor_moved(&mut self, _: &wita::Window, state: wita::MouseState) {
@@ -86,7 +96,6 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    let context = wita::Context::new();
-    let _window = wita::WindowBuilder::new().title("wita events").build(&context);
-    context.run(wita::RunType::Wait, Application);
+    wita::initialize::<Application>();
+    wita::run(wita::RunType::Wait, Application::new());
 }

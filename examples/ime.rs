@@ -4,6 +4,12 @@ struct Application {
 
 impl Application {
     fn new() -> Self {
+        let window = wita::WindowBuilder::new()
+            .title("wita ime")
+            .visible_ime_composition_window(true)
+            .visible_ime_candidate_window(false)
+            .build();
+        window.set_ime_position(wita::LogicalPosition::new(100.0, 100.0));
         Self { enabled_ime: true }
     }
 }
@@ -42,12 +48,6 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    let context = wita::Context::new();
-    let window = wita::WindowBuilder::new()
-        .title("wita ime")
-        .visible_ime_composition_window(true)
-        .visible_ime_candidate_window(false)
-        .build(&context);
-    window.set_ime_position(wita::LogicalPosition::new(100.0, 100.0));
-    context.run(wita::RunType::Wait, Application::new());
+    wita::initialize::<Application>();
+    wita::run(wita::RunType::Wait, Application::new());
 }

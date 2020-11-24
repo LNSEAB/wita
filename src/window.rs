@@ -1,6 +1,7 @@
 use crate::{
     api::*,
     context::*,
+    event::EventHandler,
     geometry::*,
     procedure::{window_proc, UserMessage},
 };
@@ -42,7 +43,14 @@ pub struct WindowStyle(DWORD);
 
 impl WindowStyle {
     pub fn default() -> Self {
-        Self(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
+        Self(
+            WS_OVERLAPPED
+                | WS_CAPTION
+                | WS_SYSMENU
+                | WS_THICKFRAME
+                | WS_MINIMIZEBOX
+                | WS_MAXIMIZEBOX,
+        )
     }
 
     pub fn borderless() -> BorderlessStyle {
@@ -164,12 +172,18 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self
     }
 
-    pub fn visible_ime_composition_window(mut self, show_ime_composition_window: bool) -> WindowBuilder<Ti, S> {
+    pub fn visible_ime_composition_window(
+        mut self,
+        show_ime_composition_window: bool,
+    ) -> WindowBuilder<Ti, S> {
         self.visible_ime_composition_window = show_ime_composition_window;
         self
     }
 
-    pub fn visible_ime_candidate_window(mut self, show_ime_cadidate_window: bool) -> WindowBuilder<Ti, S> {
+    pub fn visible_ime_candidate_window(
+        mut self,
+        show_ime_cadidate_window: bool,
+    ) -> WindowBuilder<Ti, S> {
         self.visible_ime_candidate_window = show_ime_cadidate_window;
         self
     }
@@ -197,32 +211,41 @@ impl<Ti, S> WindowBuilder<Ti, S> {
     }
 }
 
-fn register_class() -> &'static Vec<u16> {
+fn window_class_name() -> &'static Vec<u16> {
     static mut WINDOW_CLASS_NAME: Vec<u16> = Vec::new();
     static REGISTER: Once = Once::new();
     unsafe {
         REGISTER.call_once(|| {
-            let class_name = "curun_window_class".encode_utf16().chain(Some(0)).collect::<Vec<_>>();
-            let wc = WNDCLASSEXW {
-                cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
-                style: CS_VREDRAW | CS_HREDRAW,
-                lpfnWndProc: Some(window_proc),
-                cbClsExtra: 0,
-                cbWndExtra: 0,
-                hInstance: GetModuleHandleW(std::ptr::null_mut()),
-                hIcon: std::ptr::null_mut(),
-                hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
-                hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
-                lpszMenuName: std::ptr::null_mut(),
-                lpszClassName: class_name.as_ptr(),
-                hIconSm: std::ptr::null_mut(),
-            };
-            if RegisterClassExW(&wc) == 0 {
-                panic!("cannot register the window class");
-            }
+            let class_name = "curun_window_class"
+                .encode_utf16()
+                .chain(Some(0))
+                .collect::<Vec<_>>();
             WINDOW_CLASS_NAME = class_name;
         });
         &WINDOW_CLASS_NAME
+    }
+}
+
+pub(crate) fn register_class<T: EventHandler + 'static>() {
+    unsafe {
+        let class_name = window_class_name();
+        let wc = WNDCLASSEXW {
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
+            style: CS_VREDRAW | CS_HREDRAW,
+            lpfnWndProc: Some(window_proc::<T>),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: GetModuleHandleW(std::ptr::null_mut()),
+            hIcon: std::ptr::null_mut(),
+            hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
+            hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
+            lpszMenuName: std::ptr::null_mut(),
+            lpszClassName: class_name.as_ptr(),
+            hIconSm: std::ptr::null_mut(),
+        };
+        if RegisterClassExW(&wc) == 0 {
+            panic!("cannot register the window class");
+        }
     }
 }
 
@@ -231,9 +254,14 @@ where
     Ti: AsRef<str>,
     S: ToPhysicalSize<f32>,
 {
-    pub fn build(self, context: &Context) -> Window {
-        let class_name = register_class();
-        let title = self.title.as_ref().encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+    pub fn build(self) -> Window {
+        let class_name = window_class_name();
+        let title = self
+            .title
+            .as_ref()
+            .encode_utf16()
+            .chain(Some(0))
+            .collect::<Vec<_>>();
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
             let inner_size = self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI);
@@ -280,7 +308,7 @@ where
             if self.accept_drag_files {
                 DragAcceptFiles(hwnd, TRUE);
             }
-            context.window_table().push((hwnd, window.clone()));
+            push_window(hwnd, window.clone());
             window
         }
     }
@@ -343,11 +371,11 @@ impl Window {
         }
     }
 
-    pub fn inner_size(&self) -> LogicalSize<f32> {
+    pub fn inner_size(&self) -> PhysicalSize<f32> {
         unsafe {
             let mut rc = RECT::default();
             GetClientRect(self.hwnd.0, &mut rc);
-            PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32).to_logical(self.scale_factor())
+            PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32)
         }
     }
 

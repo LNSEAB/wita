@@ -45,7 +45,12 @@ extern "system" {
     fn ImmDestroyContext(himc: HIMC);
     fn ImmSetCandidateWindow(himc: HIMC, form: *mut CANDIDATEFORM) -> BOOL;
     fn ImmGetCompositionStringW(himc: HIMC, index: DWORD, lpbuf: LPVOID, buflen: DWORD) -> LONG;
-    fn ImmGetCandidateListW(himc: HIMC, index: DWORD, list: *mut CANDIDATELIST, len: DWORD) -> DWORD;
+    fn ImmGetCandidateListW(
+        himc: HIMC,
+        index: DWORD,
+        list: *mut CANDIDATELIST,
+        len: DWORD,
+    ) -> DWORD;
     fn ImmAssociateContextEx(hwnd: HWND, himc: HIMC, flag: DWORD) -> BOOL;
 }
 
@@ -117,7 +122,11 @@ impl Imc {
         }
     }
 
-    pub fn set_candidate_window_position(&self, position: PhysicalPosition<i32>, enable_exclude_rect: bool) {
+    pub fn set_candidate_window_position(
+        &self,
+        position: PhysicalPosition<i32>,
+        enable_exclude_rect: bool,
+    ) {
         unsafe {
             let pt = POINT {
                 x: position.x,
@@ -173,7 +182,12 @@ impl Imc {
             let len = byte_len as usize;
             let mut buf: Vec<u8> = Vec::with_capacity(len);
             buf.set_len(len);
-            ImmGetCompositionStringW(himc, GCS_COMPATTR, buf.as_mut_ptr() as *mut _, byte_len as DWORD);
+            ImmGetCompositionStringW(
+                himc,
+                GCS_COMPATTR,
+                buf.as_mut_ptr() as *mut _,
+                byte_len as DWORD,
+            );
             Some(
                 buf.into_iter()
                     .map(|v| match v {
@@ -191,9 +205,13 @@ impl Imc {
 
         unsafe {
             match index {
-                GCS_COMPSTR => get_string(self.himc, GCS_COMPSTR).map(|s| CompositionString::CompStr(s)),
+                GCS_COMPSTR => {
+                    get_string(self.himc, GCS_COMPSTR).map(|s| CompositionString::CompStr(s))
+                }
                 GCS_COMPATTR => get_attrs(self.himc).map(|v| CompositionString::CompAttr(v)),
-                GCS_RESULTSTR => get_string(self.himc, GCS_RESULTSTR).map(|s| CompositionString::ResultStr(s)),
+                GCS_RESULTSTR => {
+                    get_string(self.himc, GCS_RESULTSTR).map(|s| CompositionString::ResultStr(s))
+                }
                 _ => None,
             }
         }
@@ -214,7 +232,8 @@ impl Imc {
             let obj = &*(buf.as_ptr() as *const CANDIDATELIST);
             let mut list: Vec<String> = Vec::with_capacity(obj.dwCount as usize);
             for i in 0..(obj.dwCount as usize) {
-                let offset = std::slice::from_raw_parts(&obj.dwOffset as *const DWORD, obj.dwCount as usize);
+                let offset =
+                    std::slice::from_raw_parts(&obj.dwOffset as *const DWORD, obj.dwCount as usize);
                 let p = buf.as_ptr().offset(offset[i] as isize) as *const u16;
                 let len = (0..isize::MAX).position(|i| *p.offset(i) == 0).unwrap();
                 let slice = std::slice::from_raw_parts(p, len);

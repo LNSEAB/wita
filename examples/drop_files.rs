@@ -6,6 +6,10 @@ struct Application {
 
 impl Application {
     fn new() -> Self {
+        wita::WindowBuilder::new()
+            .title("wita drop files")
+            .accept_drag_files(true)
+            .build();
         Self {
             accept_drag_files: true,
         }
@@ -13,7 +17,12 @@ impl Application {
 }
 
 impl wita::EventHandler for Application {
-    fn drop_files(&mut self, _: &wita::Window, paths: &[&Path], position: wita::LogicalPosition<f32>) {
+    fn drop_files(
+        &mut self,
+        _: &wita::Window,
+        paths: &[&Path],
+        position: wita::PhysicalPosition<f32>,
+    ) {
         println!("drop files: {:?}, {:?}", paths, position);
     }
 
@@ -33,10 +42,6 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    let context = wita::Context::new();
-    let _window = wita::WindowBuilder::new()
-        .title("wita drop files")
-        .accept_drag_files(true)
-        .build(&context);
-    context.run(wita::RunType::Wait, Application::new());
+    wita::initialize::<Application>();
+    wita::run(wita::RunType::Wait, Application::new());
 }

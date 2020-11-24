@@ -7,7 +7,7 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    let context = wita::Context::new();
+    wita::initialize::<Application>();
     let mut windows = Vec::new();
     for i in 0..3 {
         let window = wita::WindowBuilder::new()
@@ -18,7 +18,7 @@ fn main() {
         } else {
             window
         };
-        windows.push(window.build(&context));
+        windows.push(window.build());
     }
-    context.run(wita::RunType::Wait, Application);
+    wita::run(wita::RunType::Wait, Application);
 }

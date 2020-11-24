@@ -17,7 +17,12 @@ impl PartialEq for Monitor {
     }
 }
 
-unsafe extern "system" fn get_monitors_proc(hmonitor: HMONITOR, _: HDC, rc: LPRECT, lparam: LPARAM) -> BOOL {
+unsafe extern "system" fn get_monitors_proc(
+    hmonitor: HMONITOR,
+    _: HDC,
+    rc: LPRECT,
+    lparam: LPARAM,
+) -> BOOL {
     let v = &mut *(lparam as *mut Vec<Monitor>);
     let rc = &*rc;
     let mut info = MONITORINFO::default();
@@ -50,7 +55,13 @@ pub fn get_monitors() -> Vec<Monitor> {
 /// A screen position to a monitor.
 pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
     unsafe {
-        let hmonitor = MonitorFromPoint(POINT { x: point.x, y: point.y }, MONITOR_DEFAULTTONULL);
+        let hmonitor = MonitorFromPoint(
+            POINT {
+                x: point.x,
+                y: point.y,
+            },
+            MONITOR_DEFAULTTONULL,
+        );
         if hmonitor == std::ptr::null_mut() {
             return None;
         }

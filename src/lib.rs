@@ -75,9 +75,49 @@ mod monitor;
 mod procedure;
 mod window;
 
-pub use context::{Context, RunType};
+pub use context::RunType;
 pub use device::*;
 pub use event::*;
 pub use geometry::*;
 pub use monitor::*;
 pub use window::*;
+
+use context::*;
+use std::ptr::null_mut;
+use winapi::um::winuser::*;
+
+pub fn initialize<T: EventHandler + 'static>() {
+    api::enable_dpi_awareness();
+    window::register_class::<T>();
+    api::enable_gui_thread();
+    context::create_context();
+}
+
+pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
+    set_event_handler(handler);
+    let mut msg = MSG::default();
+    match run_type {
+        RunType::Idle => unsafe {
+            while msg.message != WM_QUIT {
+                if PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                } else {
+                    call_handler(|eh: &mut T, _| eh.idle());
+                }
+                maybe_resume_unwind();
+            }
+        },
+        RunType::Wait => unsafe {
+            loop {
+                let ret = GetMessageW(&mut msg, null_mut(), 0, 0);
+                if ret == 0 || ret == -1 {
+                    break;
+                }
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+                maybe_resume_unwind();
+            }
+        },
+    }
+}

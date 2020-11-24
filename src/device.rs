@@ -20,7 +20,7 @@ pub enum MouseButton {
 /// A mouse cursor position and pressed mouse buttons.
 #[derive(Clone, Debug)]
 pub struct MouseState<'a> {
-    pub position: LogicalPosition<f32>,
+    pub position: PhysicalPosition<f32>,
     pub buttons: &'a [MouseButton],
 }
 

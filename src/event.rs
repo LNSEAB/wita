@@ -24,10 +24,10 @@ pub trait EventHandler {
     fn moved(&mut self, _: &Window, _: ScreenPosition) {}
 
     /// This is called when the window is resizing.
-    fn resizing(&mut self, _: &Window, _: LogicalSize<f32>) {}
+    fn resizing(&mut self, _: &Window, _: PhysicalSize<f32>) {}
 
     /// This is called when the window has been resized.
-    fn resized(&mut self, _: &Window, _: LogicalSize<f32>) {}
+    fn resized(&mut self, _: &Window, _: PhysicalSize<f32>) {}
 
     /// This is called when the window's DPI has been changed.
     fn dpi_changed(&mut self, _: &Window) {}
@@ -60,5 +60,5 @@ pub trait EventHandler {
     fn ime_end_composition(&mut self, _: &Window, _: Option<&str>) {}
 
     /// This is called when files have been dropped on the window.
-    fn drop_files(&mut self, _: &Window, _: &[&Path], _: LogicalPosition<f32>) {}
+    fn drop_files(&mut self, _: &Window, _: &[&Path], _: PhysicalPosition<f32>) {}
 }
