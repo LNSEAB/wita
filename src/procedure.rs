@@ -16,8 +16,8 @@ pub(crate) enum UserMessage {
     AcceptDragFiles,
 }
 
-fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<f32> {
-    PhysicalPosition::new(GET_X_LPARAM(lparam) as f32, GET_Y_LPARAM(lparam) as f32)
+fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<i32> {
+    PhysicalPosition::new(GET_X_LPARAM(lparam) as i32, GET_Y_LPARAM(lparam) as i32)
 }
 
 fn wparam_to_button(wparam: WPARAM) -> MouseButton {
@@ -188,7 +188,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     eh.cursor_leaved(
                         &window,
                         MouseState {
-                            position: PhysicalPosition::new(pos.x as f32, pos.y as f32),
+                            position: PhysicalPosition::new(pos.x, pos.y),
                             buttons: &mut state.mouse_buttons,
                         },
                     );
@@ -356,7 +356,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_SIZE => {
                 let value = lparam as DWORD;
-                let size = PhysicalSize::new(LOWORD(value) as f32, HIWORD(value) as f32);
+                let size = PhysicalSize::new(LOWORD(value) as u32, HIWORD(value) as u32);
                 call_handler(|eh: &mut T, state| {
                     if state.resizing {
                         eh.resizing(&window, size);
@@ -405,8 +405,8 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 let mut rc = RECT::default();
                 GetClientRect(hwnd, &mut rc);
                 let size = PhysicalSize::new(
-                    ((rc.right - rc.left) * next_dpi / prev_dpi) as f32,
-                    ((rc.bottom - rc.top) * next_dpi / prev_dpi) as f32,
+                    ((rc.right - rc.left) * next_dpi / prev_dpi) as u32,
+                    ((rc.bottom - rc.top) * next_dpi / prev_dpi) as u32,
                 );
                 let rc = adjust_window_rect(
                     size,
@@ -453,8 +453,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 call_handler(|eh: &mut T, _| {
                     eh.closed(&window);
                     {
-                        let state = window.state.read().unwrap();
-                        for child in &state.children {
+                        for child in window.children.borrow().iter() {
                             child.close();
                         }
                     }
@@ -511,12 +510,10 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         );
                     }
                     w if w == UserMessage::EnableIme as usize => {
-                        let state = window.state.read().unwrap();
-                        state.ime_context.enable();
+                        window.ime_context.borrow().enable();
                     }
                     w if w == UserMessage::DisableIme as usize => {
-                        let state = window.state.read().unwrap();
-                        state.ime_context.disable();
+                        window.ime_context.borrow().disable();
                     }
                     w if w == UserMessage::SetStyle as usize => {
                         let style = {
@@ -524,7 +521,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                             state.style
                         };
                         let rc = adjust_window_rect(
-                            window.inner_size().to_physical(window.scale_factor()),
+                            window.inner_size().to_physical(window.dpi()),
                             style,
                             0,
                             GetDpiForWindow(hwnd),

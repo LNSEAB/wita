@@ -4,8 +4,6 @@ use std::cell::RefCell;
 use std::panic::resume_unwind;
 use winapi::shared::windef::*;
 
-pub(crate) const DEFAULT_DPI: f32 = 96.0;
-
 /// Describes event loop types.
 pub enum RunType {
     Idle,

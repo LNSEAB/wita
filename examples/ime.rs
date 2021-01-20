@@ -9,7 +9,7 @@ impl Application {
             .visible_ime_composition_window(true)
             .visible_ime_candidate_window(false)
             .build();
-        window.set_ime_position(wita::LogicalPosition::new(100.0, 100.0));
+        window.set_ime_position(wita::LogicalPosition::new(100, 100));
         Self { enabled_ime: true }
     }
 }

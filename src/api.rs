@@ -22,7 +22,7 @@ pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
 }
 
 pub fn adjust_window_rect(
-    size: PhysicalSize<f32>,
+    size: PhysicalSize<u32>,
     style: DWORD,
     ex_style: DWORD,
     dpi: u32,

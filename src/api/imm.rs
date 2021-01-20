@@ -81,12 +81,6 @@ impl ImmContext {
     }
 }
 
-pub enum CompositionString {
-    CompStr(String),
-    CompAttr(Vec<ime::Attribute>),
-    ResultStr(String),
-}
-
 impl Drop for ImmContext {
     fn drop(&mut self) {
         unsafe {
@@ -94,6 +88,12 @@ impl Drop for ImmContext {
             ImmDestroyContext(self.himc);
         }
     }
+}
+
+pub enum CompositionString {
+    CompStr(String),
+    CompAttr(Vec<ime::Attribute>),
+    ResultStr(String),
 }
 
 pub struct Imc {

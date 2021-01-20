@@ -6,6 +6,8 @@ use crate::{
     procedure::{window_proc, UserMessage},
 };
 use std::sync::{Arc, Once, RwLock};
+use std::rc::Rc;
+use std::cell::RefCell;
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{
     libloaderapi::GetModuleHandleW,
@@ -13,6 +15,7 @@ use winapi::um::{
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
+use crate::DEFAULT_DPI;
 
 #[derive(Clone)]
 pub(crate) struct WindowHandle(HWND);
@@ -110,11 +113,11 @@ pub struct WindowBuilder<Ti = (), S = ()> {
 }
 
 impl WindowBuilder<(), ()> {
-    pub fn new() -> WindowBuilder<&'static str, LogicalSize<f32>> {
+    pub fn new() -> WindowBuilder<&'static str, LogicalSize<u32>> {
         WindowBuilder {
             title: "",
             position: ScreenPosition::new(0, 0),
-            inner_size: LogicalSize::new(640.0, 480.0),
+            inner_size: LogicalSize::new(640, 480),
             style: WindowStyle::default().value(),
             visibility: true,
             visible_ime_composition_window: true,
@@ -252,7 +255,7 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
 impl<Ti, S> WindowBuilder<Ti, S>
 where
     Ti: AsRef<str>,
-    S: ToPhysicalSize<f32>,
+    S: ToPhysicalSize<u32>,
 {
     pub fn build(self) -> Window {
         let class_name = window_class_name();
@@ -264,7 +267,7 @@ where
             .collect::<Vec<_>>();
         unsafe {
             let dpi = get_dpi_from_point(self.position.clone());
-            let inner_size = self.inner_size.to_physical(dpi as f32 / DEFAULT_DPI);
+            let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, WS_OVERLAPPEDWINDOW, 0, dpi);
             let hwnd = CreateWindowExW(
                 0,
@@ -293,14 +296,12 @@ where
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
-                    ime_context: ImmContext::new(hwnd),
                     closed: false,
-                    children: self.children,
                 },
+                self.children,
             );
             if let Some(parent) = self.parent {
-                let mut state = parent.state.write().unwrap();
-                state.children.push(window.clone());
+                parent.children.borrow_mut().push(window.clone());
             }
             if self.visibility {
                 window.show();
@@ -318,13 +319,11 @@ pub(crate) struct WindowState {
     pub title: String,
     pub style: DWORD,
     pub set_position: ScreenPosition,
-    pub set_inner_size: PhysicalSize<f32>,
+    pub set_inner_size: PhysicalSize<u32>,
     pub visible_ime_composition_window: bool,
     pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
-    pub ime_context: ImmContext,
     pub closed: bool,
-    pub children: Vec<Window>,
 }
 
 /// Represents a window.
@@ -332,13 +331,17 @@ pub(crate) struct WindowState {
 pub struct Window {
     hwnd: WindowHandle,
     pub(crate) state: Arc<RwLock<WindowState>>,
+    pub(crate) ime_context: Rc<RefCell<ImmContext>>,
+    pub(crate) children: Rc<RefCell<Vec<Window>>>,
 }
 
 impl Window {
-    pub(crate) fn new(hwnd: HWND, state: WindowState) -> Self {
+    pub(crate) fn new(hwnd: HWND, state: WindowState, children: Vec<Window>) -> Self {
         Self {
             hwnd: WindowHandle(hwnd),
             state: Arc::new(RwLock::new(state)),
+            ime_context: Rc::new(RefCell::new(ImmContext::new(hwnd))),
+            children: Rc::new(RefCell::new(children)),
         }
     }
 
@@ -371,24 +374,28 @@ impl Window {
         }
     }
 
-    pub fn inner_size(&self) -> PhysicalSize<f32> {
+    pub fn inner_size(&self) -> PhysicalSize<u32> {
         unsafe {
             let mut rc = RECT::default();
             GetClientRect(self.hwnd.0, &mut rc);
-            PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32)
+            PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32)
         }
     }
 
-    pub fn set_inner_size(&self, size: impl ToPhysicalSize<f32>) {
+    pub fn set_inner_size(&self, size: impl ToPhysicalSize<u32>) {
         unsafe {
             let mut state = self.state.write().unwrap();
-            state.set_inner_size = size.to_physical(self.scale_factor());
+            state.set_inner_size = size.to_physical(self.dpi());
             PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
         }
     }
+    
+    pub fn dpi(&self) -> u32 {
+        unsafe { GetDpiForWindow(self.hwnd.0) }
+    }
 
     pub fn scale_factor(&self) -> f32 {
-        unsafe { GetDpiForWindow(self.hwnd.0) as f32 / DEFAULT_DPI }
+        unsafe { GetDpiForWindow(self.hwnd.0) as f32 / DEFAULT_DPI as f32 }
     }
 
     pub fn show(&self) {
@@ -426,11 +433,11 @@ impl Window {
         self.hwnd.0 as _
     }
 
-    pub fn ime_position(&self) -> PhysicalPosition<f32> {
+    pub fn ime_position(&self) -> PhysicalPosition<i32> {
         let state = self.state.read().unwrap();
         PhysicalPosition {
-            x: state.ime_position.x as f32,
-            y: state.ime_position.y as f32,
+            x: state.ime_position.x,
+            y: state.ime_position.y,
         }
     }
 
@@ -446,11 +453,166 @@ impl Window {
         }
     }
 
-    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<f32>) {
+    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<i32>) {
         let mut state = self.state.write().unwrap();
-        let position = position.to_physical(self.scale_factor());
-        state.ime_position.x = position.x as i32;
-        state.ime_position.y = position.y as i32;
+        let position = position.to_physical(self.dpi() as i32);
+        state.ime_position.x = position.x;
+        state.ime_position.y = position.y;
+    }
+
+    pub fn style(&self) -> WindowStyle {
+        let state = self.state.read().unwrap();
+        WindowStyle(state.style as DWORD)
+    }
+
+    pub fn set_style(&self, style: impl Style) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.style = style.value();
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetStyle as usize, 0);
+        }
+    }
+
+    pub fn accept_drag_files(&self, enabled: bool) {
+        unsafe {
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                UserMessage::AcceptDragFiles as usize,
+                (if enabled { TRUE } else { FALSE }) as LPARAM,
+            );
+        }
+    }
+    
+    pub fn proxy(&self) -> WindowProxy {
+        WindowProxy {
+            hwnd: self.hwnd.clone(),
+            state: self.state.clone(),
+        }
+    }
+}
+
+/// The object is like Window, can send to other threads.
+#[derive(Clone)]
+pub struct WindowProxy {
+    hwnd: WindowHandle,
+    state: Arc<RwLock<WindowState>>,
+}
+
+impl WindowProxy {
+    pub fn title(&self) -> String {
+        let state = self.state.read().unwrap();
+        state.title.clone()
+    }
+
+    pub fn set_title(&self, title: impl AsRef<str>) {
+        let mut state = self.state.write().unwrap();
+        state.title = title.as_ref().to_string();
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetTitle as usize, 0);
+        }
+    }
+
+    pub fn position(&self) -> ScreenPosition {
+        unsafe {
+            let mut rc = RECT::default();
+            GetWindowRect(self.hwnd.0, &mut rc);
+            ScreenPosition::new(rc.left, rc.top)
+        }
+    }
+
+    pub fn set_position(&self, position: ScreenPosition) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.set_position = position;
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetPosition as usize, 0);
+        }
+    }
+
+    pub fn inner_size(&self) -> PhysicalSize<u32> {
+        unsafe {
+            let mut rc = RECT::default();
+            GetClientRect(self.hwnd.0, &mut rc);
+            PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32)
+        }
+    }
+
+    pub fn set_inner_size(&self, size: impl ToPhysicalSize<u32>) {
+        unsafe {
+            let mut state = self.state.write().unwrap();
+            state.set_inner_size = size.to_physical(self.dpi());
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
+        }
+    }
+    
+    pub fn dpi(&self) -> u32 {
+        unsafe { GetDpiForWindow(self.hwnd.0) }
+    }
+
+    pub fn scale_factor(&self) -> f32 {
+        unsafe { GetDpiForWindow(self.hwnd.0) as f32 / DEFAULT_DPI as f32 }
+    }
+
+    pub fn show(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd.0, SW_SHOW);
+        }
+    }
+
+    pub fn hide(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd.0, SW_HIDE);
+        }
+    }
+
+    pub fn redraw(&self) {
+        unsafe {
+            RedrawWindow(self.hwnd.0, std::ptr::null(), std::ptr::null_mut(), RDW_INTERNALPAINT);
+        }
+    }
+
+    pub fn is_closed(&self) -> bool {
+        let state = self.state.read().unwrap();
+        state.closed
+    }
+
+    pub fn close(&self) {
+        unsafe {
+            if !self.is_closed() {
+                PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
+            }
+        }
+    }
+
+    pub fn raw_handle(&self) -> *const std::ffi::c_void {
+        self.hwnd.0 as _
+    }
+
+    pub fn ime_position(&self) -> PhysicalPosition<i32> {
+        let state = self.state.read().unwrap();
+        PhysicalPosition {
+            x: state.ime_position.x,
+            y: state.ime_position.y,
+        }
+    }
+
+    pub fn enable_ime(&self) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
+        }
+    }
+
+    pub fn disable_ime(&self) {
+        unsafe {
+            PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
+        }
+    }
+
+    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<i32>) {
+        let mut state = self.state.write().unwrap();
+        let position = position.to_physical(self.dpi() as i32);
+        state.ime_position.x = position.x;
+        state.ime_position.y = position.y;
     }
 
     pub fn style(&self) -> WindowStyle {

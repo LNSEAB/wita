@@ -1,3 +1,5 @@
+use wita::ToLogicalPosition;
+
 struct Application;
 
 impl Application {
@@ -24,11 +26,11 @@ impl wita::EventHandler for Application {
         println!("closed");
     }
 
-    fn resizing(&mut self, _: &wita::Window, size: wita::PhysicalSize<f32>) {
+    fn resizing(&mut self, _: &wita::Window, size: wita::PhysicalSize<u32>) {
         println!("resizing: {:?}", size);
     }
 
-    fn resized(&mut self, _: &wita::Window, size: wita::PhysicalSize<f32>) {
+    fn resized(&mut self, _: &wita::Window, size: wita::PhysicalSize<u32>) {
         println!("resized: {:?}", size);
     }
 
@@ -53,8 +55,8 @@ impl wita::EventHandler for Application {
         );
     }
 
-    fn cursor_moved(&mut self, _: &wita::Window, state: wita::MouseState) {
-        println!("cursor moved: {:?}", state);
+    fn cursor_moved(&mut self, wnd: &wita::Window, state: wita::MouseState) {
+        println!("cursor moved: {:?} {:?}", state, state.position.to_logical(wnd.dpi() as i32));
     }
 
     fn cursor_entered(&mut self, _: &wita::Window, state: wita::MouseState) {

@@ -6,7 +6,7 @@ impl Application {
     fn new() -> Self {
         wita::WindowBuilder::new()
             .title("wita count")
-            .inner_size(wita::LogicalSize::new(256.0, 256.0))
+            .inner_size(wita::LogicalSize::new(256, 256))
             .style(
                 wita::WindowStyle::default()
                     .resizable(false)

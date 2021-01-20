@@ -5,14 +5,14 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```no_run
 //! struct Application;
 //! 
 //! impl Application {
 //!     fn new() -> Self {
 //!         wita::WindowBuilder::new()
 //!             .title("hello, world!")
-//!             .build(&context);
+//!             .build();
 //!         Self
 //!     }
 //! }
@@ -24,7 +24,7 @@
 //! }
 //!
 //! fn main() {
-//!     wita::initaizlie::<Application>();
+//!     wita::initialize::<Application>();
 //!     wita::run(wita::RunType::Wait, Application);
 //! }
 //! ```
@@ -33,7 +33,7 @@
 //!
 //! You must implement [`EventHandler`] for the your defined object, and can handle events in the `impl EventHandler`.
 //!
-//! ```no_run
+//! ```ignore
 //! struct Foo {}
 //!
 //! impl Foo {
@@ -53,7 +53,7 @@
 //! ```
 //! Next, pass the your defined object to [`run`].
 //!
-//! ```no_run
+//! ```ignore
 //! wita::initialize::<Foo>();
 //! wita::run(wita::RunType::Wait, Foo::new());
 //! ```
@@ -86,6 +86,8 @@ pub use window::*;
 use context::*;
 use std::ptr::null_mut;
 use winapi::um::winuser::*;
+
+pub const DEFAULT_DPI: i32 = 96;
 
 /// Initialize `wita`.
 pub fn initialize<T: EventHandler + 'static>() {

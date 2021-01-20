@@ -7,7 +7,7 @@ use winapi::um::winuser::*;
 pub struct Monitor {
     hmonitor: HMONITOR,
     pub position: ScreenPosition,
-    pub size: PhysicalSize<f32>,
+    pub size: PhysicalSize<u32>,
     pub is_primary: bool,
 }
 
@@ -31,7 +31,7 @@ unsafe extern "system" fn get_monitors_proc(
     v.push(Monitor {
         hmonitor,
         position: ScreenPosition::new(rc.left, rc.top),
-        size: PhysicalSize::new((rc.right - rc.left) as f32, (rc.bottom - rc.top) as f32),
+        size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
         is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
     });
     TRUE
@@ -72,8 +72,8 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
             hmonitor,
             position: ScreenPosition::new(info.rcMonitor.left, info.rcMonitor.top),
             size: PhysicalSize::new(
-                (info.rcMonitor.right - info.rcMonitor.left) as f32,
-                (info.rcMonitor.bottom - info.rcMonitor.top) as f32,
+                (info.rcMonitor.right - info.rcMonitor.left) as u32,
+                (info.rcMonitor.bottom - info.rcMonitor.top) as u32,
             ),
             is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
         })
