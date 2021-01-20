@@ -405,7 +405,7 @@ impl Window {
 
     pub fn redraw(&self) {
         unsafe {
-            InvalidateRect(self.hwnd.0, std::ptr::null_mut(), FALSE);
+            RedrawWindow(self.hwnd.0, std::ptr::null(), std::ptr::null_mut(), RDW_INTERNALPAINT);
         }
     }
 
