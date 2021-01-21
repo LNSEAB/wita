@@ -117,6 +117,19 @@
 			"externalConsole": false,
 			"preLaunchTask": "build borderless_fullscreen",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "keyboard_state",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/keyboard_state.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build keyboard_state",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }

@@ -153,6 +153,23 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build keyboard_state",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "keyboard_state"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

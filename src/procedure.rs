@@ -71,46 +71,6 @@ unsafe fn mouse_input<T: EventHandler + 'static>(
     0
 }
 
-fn as_virtual_key(wparam: WPARAM) -> VirtualKey {
-    const ZERO: i32 = b'0' as i32;
-    const Z: i32 = b'Z' as i32;
-    let value = wparam as i32;
-    match value {
-        v @ ZERO..=Z => VirtualKey::Char((v as u8).into()),
-        VK_ESCAPE => VirtualKey::Esc,
-        VK_TAB => VirtualKey::Tab,
-        VK_CAPITAL => VirtualKey::CapsLock,
-        VK_SHIFT => VirtualKey::Shift,
-        VK_CONTROL => VirtualKey::Ctrl,
-        VK_MENU => VirtualKey::Alt,
-        VK_BACK => VirtualKey::BackSpace,
-        VK_RETURN => VirtualKey::Enter,
-        VK_SPACE => VirtualKey::Space,
-        VK_SNAPSHOT => VirtualKey::PrintScreen,
-        VK_SCROLL => VirtualKey::ScrollLock,
-        VK_PAUSE => VirtualKey::Pause,
-        VK_INSERT => VirtualKey::Insert,
-        VK_DELETE => VirtualKey::Delete,
-        VK_HOME => VirtualKey::Home,
-        VK_END => VirtualKey::End,
-        VK_PRIOR => VirtualKey::PageUp,
-        VK_NEXT => VirtualKey::PageDown,
-        VK_UP => VirtualKey::Up,
-        VK_DOWN => VirtualKey::Down,
-        VK_LEFT => VirtualKey::Left,
-        VK_RIGHT => VirtualKey::Right,
-        VK_NUMLOCK => VirtualKey::NumLock,
-        v @ VK_NUMPAD0..=VK_NUMPAD9 => VirtualKey::NumPad((v - VK_NUMPAD0) as u8),
-        VK_ADD => VirtualKey::NumAdd,
-        VK_SUBTRACT => VirtualKey::NumSub,
-        VK_MULTIPLY => VirtualKey::NumMul,
-        VK_DIVIDE => VirtualKey::NumDiv,
-        VK_DECIMAL => VirtualKey::NumDecimal,
-        v @ VK_F1..=VK_F24 => VirtualKey::F((v - VK_F1 + 1) as u8),
-        v @ _ => VirtualKey::Other(v as u32),
-    }
-}
-
 fn key_input<T: EventHandler + 'static>(
     window: &Window,
     state: KeyState,
@@ -121,7 +81,7 @@ fn key_input<T: EventHandler + 'static>(
     call_handler(|eh: &mut T, _| {
         eh.key_input(
             window,
-            KeyCode::new(as_virtual_key(wparam), scan_code),
+            KeyCode::new(as_virtual_key(wparam as i32), scan_code),
             state,
         );
     });
