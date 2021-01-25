@@ -15,7 +15,13 @@ impl Application {
 }
 
 impl wita::EventHandler for Application {
-    fn key_input(&mut self, window: &wita::Window, code: wita::KeyCode, state: wita::KeyState) {
+    fn key_input(
+        &mut self,
+        window: &wita::Window,
+        code: wita::KeyCode,
+        state: wita::KeyState,
+        _: bool,
+    ) {
         if code.vkey == wita::VirtualKey::Char('T') && state == wita::KeyState::Released {
             if self.enabled_ime {
                 window.disable_ime();

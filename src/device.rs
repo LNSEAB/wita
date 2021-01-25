@@ -1,6 +1,6 @@
 use crate::geometry::*;
-use winapi::um::winuser::*;
 use serde::{Deserialize, Serialize};
+use winapi::um::winuser::*;
 
 /// Describes the state of a keyboard key and a mouse button.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
@@ -136,12 +136,15 @@ pub fn keyboard_state() -> Vec<VirtualKey> {
     unsafe {
         let mut ks = [0u8; 256];
         GetKeyboardState(ks.as_mut_ptr());
-        ks.iter().enumerate().filter_map(|(i, k)| {
-            if (k & 0x80) != 0 {
-                Some(as_virtual_key(i as i32))
-            } else {
-                None
-            }
-        }).collect::<Vec<_>>()
+        ks.iter()
+            .enumerate()
+            .filter_map(|(i, k)| {
+                if (k & 0x80) != 0 {
+                    Some(as_virtual_key(i as i32))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
     }
 }

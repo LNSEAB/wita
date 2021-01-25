@@ -56,7 +56,11 @@ impl wita::EventHandler for Application {
     }
 
     fn cursor_moved(&mut self, wnd: &wita::Window, state: wita::MouseState) {
-        println!("cursor moved: {:?} {:?}", state, state.position.to_logical(wnd.dpi() as i32));
+        println!(
+            "cursor moved: {:?} {:?}",
+            state,
+            state.position.to_logical(wnd.dpi() as i32)
+        );
     }
 
     fn cursor_entered(&mut self, _: &wita::Window, state: wita::MouseState) {
@@ -67,8 +71,14 @@ impl wita::EventHandler for Application {
         println!("cursor leaved: {:?}", state);
     }
 
-    fn key_input(&mut self, _: &wita::Window, code: wita::KeyCode, state: wita::KeyState) {
-        println!("key input: {:?}, {:?}", code, state);
+    fn key_input(
+        &mut self,
+        _: &wita::Window,
+        code: wita::KeyCode,
+        state: wita::KeyState,
+        prev_pressed: bool,
+    ) {
+        println!("key input: {:?}, {:?}, {}", code, state, prev_pressed);
     }
 
     fn char_input(&mut self, _: &wita::Window, c: char) {

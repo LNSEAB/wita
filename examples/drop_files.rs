@@ -26,7 +26,13 @@ impl wita::EventHandler for Application {
         println!("drop files: {:?}, {:?}", paths, position);
     }
 
-    fn key_input(&mut self, window: &wita::Window, code: wita::KeyCode, state: wita::KeyState) {
+    fn key_input(
+        &mut self,
+        window: &wita::Window,
+        code: wita::KeyCode,
+        state: wita::KeyState,
+        _: bool,
+    ) {
         if state == wita::KeyState::Pressed {
             if code.vkey == wita::VirtualKey::Char('T') {
                 self.accept_drag_files = !self.accept_drag_files;

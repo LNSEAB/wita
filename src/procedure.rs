@@ -83,6 +83,7 @@ fn key_input<T: EventHandler + 'static>(
             window,
             KeyCode::new(as_virtual_key(wparam as i32), scan_code),
             state,
+            (lparam >> 30) & 0x01 != 0,
         );
     });
     0

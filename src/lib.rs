@@ -7,7 +7,7 @@
 //!
 //! ```no_run
 //! struct Application;
-//! 
+//!
 //! impl Application {
 //!     fn new() -> Self {
 //!         wita::WindowBuilder::new()
@@ -38,7 +38,7 @@
 //!
 //! impl Foo {
 //!     fn new() -> Self {
-//!         // 
+//!         //
 //!         Self {}
 //!     }
 //! }

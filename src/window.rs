@@ -1,3 +1,4 @@
+use crate::DEFAULT_DPI;
 use crate::{
     api::*,
     context::*,
@@ -5,9 +6,9 @@ use crate::{
     geometry::*,
     procedure::{window_proc, UserMessage},
 };
-use std::sync::{Arc, Once, RwLock};
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::{Arc, Once, RwLock};
 use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{
     libloaderapi::GetModuleHandleW,
@@ -15,7 +16,6 @@ use winapi::um::{
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
-use crate::DEFAULT_DPI;
 
 #[derive(Clone)]
 pub(crate) struct WindowHandle(HWND);
@@ -389,7 +389,7 @@ impl Window {
             PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
         }
     }
-    
+
     pub fn dpi(&self) -> u32 {
         unsafe { GetDpiForWindow(self.hwnd.0) }
     }
@@ -412,7 +412,12 @@ impl Window {
 
     pub fn redraw(&self) {
         unsafe {
-            RedrawWindow(self.hwnd.0, std::ptr::null(), std::ptr::null_mut(), RDW_INTERNALPAINT);
+            RedrawWindow(
+                self.hwnd.0,
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                RDW_INTERNALPAINT,
+            );
         }
     }
 
@@ -483,7 +488,7 @@ impl Window {
             );
         }
     }
-    
+
     pub fn proxy(&self) -> WindowProxy {
         WindowProxy {
             hwnd: self.hwnd.clone(),
@@ -544,7 +549,7 @@ impl WindowProxy {
             PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
         }
     }
-    
+
     pub fn dpi(&self) -> u32 {
         unsafe { GetDpiForWindow(self.hwnd.0) }
     }
@@ -567,7 +572,12 @@ impl WindowProxy {
 
     pub fn redraw(&self) {
         unsafe {
-            RedrawWindow(self.hwnd.0, std::ptr::null(), std::ptr::null_mut(), RDW_INTERNALPAINT);
+            RedrawWindow(
+                self.hwnd.0,
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                RDW_INTERNALPAINT,
+            );
         }
     }
 

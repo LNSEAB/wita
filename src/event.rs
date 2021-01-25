@@ -45,7 +45,7 @@ pub trait EventHandler {
     fn cursor_leaved(&mut self, _: &Window, _: MouseState) {}
 
     /// This is called when the keyboard key has been pressed and released.
-    fn key_input(&mut self, _: &Window, _: KeyCode, _: KeyState) {}
+    fn key_input(&mut self, _: &Window, _: KeyCode, _: KeyState, _: bool) {}
 
     /// This is called when the keyboard key has been inputed the character.
     fn char_input(&mut self, _: &Window, _: char) {}

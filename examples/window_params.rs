@@ -18,7 +18,13 @@ impl wita::EventHandler for Application {
         println!("moved: {:?}", pos);
     }
 
-    fn key_input(&mut self, window: &wita::Window, code: wita::KeyCode, state: wita::KeyState) {
+    fn key_input(
+        &mut self,
+        window: &wita::Window,
+        code: wita::KeyCode,
+        state: wita::KeyState,
+        _: bool,
+    ) {
         if state == wita::KeyState::Pressed {
             match code.vkey {
                 wita::VirtualKey::Char('M') => {
