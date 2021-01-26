@@ -1,5 +1,6 @@
 use crate::geometry::*;
-use serde::{Deserialize, Serialize};
+use serde::*;
+use serde::de::*;
 use winapi::um::winuser::*;
 
 /// Describes the state of a keyboard key and a mouse button.
@@ -26,7 +27,7 @@ pub struct MouseState<'a> {
 }
 
 /// Describes keyboard key names.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum VirtualKey {
     Char(char),
     Esc,
@@ -66,6 +67,87 @@ pub enum VirtualKey {
     RAlt,
     F(u8),
     Other(u32),
+}
+
+impl Serialize for VirtualKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        match *self {
+            Self::Char(c) => serializer.serialize_char(c.to_ascii_lowercase()),
+            Self::NumPad(n) => serializer.serialize_str(&format!("numpad{}", n)),
+            Self::F(n) => serializer.serialize_str(&format!("f{}", n)),
+            Self::Other(n) => serializer.serialize_str(&format!("other{}", n)),
+            k @ _ => serializer.serialize_str(&format!("{:?}", k).to_ascii_lowercase()),
+        }
+    }
+}
+
+struct VirtualKeyVisitor;
+
+impl<'de> Visitor<'de> for VirtualKeyVisitor {
+    type Value = VirtualKey;
+    
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "invalid value")
+    }
+    
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error
+    {
+        match v {
+            "esc" => Ok(VirtualKey::Esc),
+            "tab" => Ok(VirtualKey::Tab),
+            "capslock" => Ok(VirtualKey::CapsLock),
+            "shift" => Ok(VirtualKey::Shift),
+            "ctrl" => Ok(VirtualKey::Ctrl),
+            "alt" => Ok(VirtualKey::Alt),
+            "backspace" => Ok(VirtualKey::BackSpace),
+            "enter" => Ok(VirtualKey::Enter),
+            "space" => Ok(VirtualKey::Space),
+            "printscreen" => Ok(VirtualKey::PrintScreen),
+            "screenlock" => Ok(VirtualKey::ScrollLock),
+            "pause" => Ok(VirtualKey::Pause),
+            "insert" => Ok(VirtualKey::Insert),
+            "delete" => Ok(VirtualKey::Delete),
+            "home" => Ok(VirtualKey::Home),
+            "end" => Ok(VirtualKey::End),
+            "pageup" => Ok(VirtualKey::PageUp),
+            "pagedown" => Ok(VirtualKey::PageDown),
+            "up" => Ok(VirtualKey::Up),
+            "down" => Ok(VirtualKey::Down),
+            "left" => Ok(VirtualKey::Left),
+            "right" => Ok(VirtualKey::Right),
+            "numlock" => Ok(VirtualKey::NumLock),
+            "numadd" => Ok(VirtualKey::NumAdd),
+            "numsub" => Ok(VirtualKey::NumSub),
+            "nummul" => Ok(VirtualKey::NumMul),
+            "numdiv" => Ok(VirtualKey::NumDiv),
+            "numdecimal" => Ok(VirtualKey::NumDecimal),
+            "lshift" => Ok(VirtualKey::LShift),
+            "rshift" => Ok(VirtualKey::RShift),
+            "lctrl" => Ok(VirtualKey::LCtrl),
+            "rctrl" => Ok(VirtualKey::RCtrl),
+            "lalt" => Ok(VirtualKey::LAlt),
+            "ralt" => Ok(VirtualKey::RAlt),
+            _ if v.len() == 1 => Ok(VirtualKey::Char(v.chars().next().unwrap().to_ascii_uppercase())),
+            _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
+            _ if v.starts_with("f") => Ok(VirtualKey::F(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
+            _ if v.starts_with("other") => Ok(VirtualKey::Other(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
+            _ => Err(serde::de::Error::custom("unknown")),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for VirtualKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+            D: Deserializer<'de>
+    {
+        deserializer.deserialize_identifier(VirtualKeyVisitor)
+    }
 }
 
 /// A keyboard scan code
