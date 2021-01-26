@@ -132,9 +132,14 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
             "rctrl" => Ok(VirtualKey::RCtrl),
             "lalt" => Ok(VirtualKey::LAlt),
             "ralt" => Ok(VirtualKey::RAlt),
-            _ if v.len() == 1 => Ok(VirtualKey::Char(
-                v.chars().next().unwrap().to_ascii_uppercase(),
-            )),
+            _ if v.len() == 1 => {
+                let c = v.chars().next().unwrap();
+                if !c.is_ascii_control() {
+                    Ok(VirtualKey::Char(c.to_ascii_uppercase()))
+                } else {
+                    Err(serde::de::Error::custom("invalid value"))
+                }
+            },
             _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()
@@ -150,7 +155,7 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
             )),
-            _ => Err(serde::de::Error::custom("unknown")),
+            _ => Err(serde::de::Error::custom("invalid value")),
         }
     }
 }
