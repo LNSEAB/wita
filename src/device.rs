@@ -1,6 +1,6 @@
 use crate::geometry::*;
-use serde::*;
 use serde::de::*;
+use serde::*;
 use winapi::um::winuser::*;
 
 /// Describes the state of a keyboard key and a mouse button.
@@ -72,7 +72,7 @@ pub enum VirtualKey {
 impl Serialize for VirtualKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         match *self {
             Self::Char(c) => serializer.serialize_char(c.to_ascii_lowercase()),
@@ -88,14 +88,14 @@ struct VirtualKeyVisitor;
 
 impl<'de> Visitor<'de> for VirtualKeyVisitor {
     type Value = VirtualKey;
-    
+
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "invalid value")
     }
-    
+
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
-        E: serde::de::Error
+        E: serde::de::Error,
     {
         match v {
             "esc" => Ok(VirtualKey::Esc),
@@ -132,10 +132,24 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
             "rctrl" => Ok(VirtualKey::RCtrl),
             "lalt" => Ok(VirtualKey::LAlt),
             "ralt" => Ok(VirtualKey::RAlt),
-            _ if v.len() == 1 => Ok(VirtualKey::Char(v.chars().next().unwrap().to_ascii_uppercase())),
-            _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
-            _ if v.starts_with("f") => Ok(VirtualKey::F(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
-            _ if v.starts_with("other") => Ok(VirtualKey::Other(v.trim_matches(|c| !char::is_numeric(c)).parse().map_err(|_| serde::de::Error::custom("invalid value"))?)),
+            _ if v.len() == 1 => Ok(VirtualKey::Char(
+                v.chars().next().unwrap().to_ascii_uppercase(),
+            )),
+            _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(
+                v.trim_matches(|c| !char::is_numeric(c))
+                    .parse()
+                    .map_err(|_| serde::de::Error::custom("invalid value"))?,
+            )),
+            _ if v.starts_with("f") => Ok(VirtualKey::F(
+                v.trim_matches(|c| !char::is_numeric(c))
+                    .parse()
+                    .map_err(|_| serde::de::Error::custom("invalid value"))?,
+            )),
+            _ if v.starts_with("other") => Ok(VirtualKey::Other(
+                v.trim_matches(|c| !char::is_numeric(c))
+                    .parse()
+                    .map_err(|_| serde::de::Error::custom("invalid value"))?,
+            )),
             _ => Err(serde::de::Error::custom("unknown")),
         }
     }
@@ -144,7 +158,7 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
 impl<'de> Deserialize<'de> for VirtualKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-            D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_identifier(VirtualKeyVisitor)
     }
