@@ -130,6 +130,32 @@
 			"externalConsole": false,
 			"preLaunchTask": "build keyboard_state",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "icon",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/icon.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build icon",
+			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "icon_resource",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/icon_resource.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/examples/icon_resource",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build icon_resource",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }

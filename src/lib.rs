@@ -74,6 +74,7 @@ mod geometry;
 pub mod ime;
 mod monitor;
 mod procedure;
+mod resource;
 mod window;
 
 pub use context::RunType;
@@ -81,6 +82,7 @@ pub use device::*;
 pub use event::*;
 pub use geometry::*;
 pub use monitor::*;
+pub use resource::*;
 pub use window::*;
 
 use context::*;

@@ -5,7 +5,9 @@ use crate::{
     event::EventHandler,
     geometry::*,
     procedure::{window_proc, UserMessage},
+    resource::*,
 };
+use raw_window_handle::{windows::WindowsHandle, HasRawWindowHandle, RawWindowHandle};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Once, RwLock};
@@ -16,13 +18,6 @@ use winapi::um::{
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
-use raw_window_handle::{RawWindowHandle, windows::WindowsHandle, HasRawWindowHandle};
-
-#[derive(Clone)]
-pub(crate) struct InstanceHandle(HINSTANCE);
-
-unsafe impl Send for InstanceHandle {}
-unsafe impl Sync for InstanceHandle {}
 
 #[derive(Clone)]
 pub(crate) struct WindowHandle(HWND);
@@ -117,6 +112,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     parent: Option<Window>,
     children: Vec<Window>,
     accept_drag_files: bool,
+    icon: Option<Icon>,
 }
 
 impl WindowBuilder<(), ()> {
@@ -132,6 +128,7 @@ impl WindowBuilder<(), ()> {
             parent: None,
             children: Vec::new(),
             accept_drag_files: false,
+            icon: None,
         }
     }
 }
@@ -149,6 +146,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             parent: self.parent,
             children: self.children,
             accept_drag_files: self.accept_drag_files,
+            icon: self.icon,
         }
     }
 
@@ -169,6 +167,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             parent: self.parent,
             children: self.children,
             accept_drag_files: self.accept_drag_files,
+            icon: self.icon,
         }
     }
 
@@ -217,6 +216,11 @@ impl<Ti, S> WindowBuilder<Ti, S> {
 
     pub fn accept_drag_files(mut self, enabled: bool) -> WindowBuilder<Ti, S> {
         self.accept_drag_files = enabled;
+        self
+    }
+
+    pub fn icon(mut self, icon: Icon) -> WindowBuilder<Ti, S> {
+        self.icon = Some(icon);
         self
     }
 }
@@ -276,6 +280,7 @@ where
             let dpi = get_dpi_from_point(self.position.clone());
             let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, WS_OVERLAPPEDWINDOW, 0, dpi);
+            let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
             let hwnd = CreateWindowExW(
                 0,
                 class_name.as_ptr(),
@@ -287,14 +292,13 @@ where
                 (rc.bottom - rc.top) as i32,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
-                GetModuleHandleW(std::ptr::null_mut()),
+                hinst,
                 std::ptr::null_mut(),
             );
             if hwnd == std::ptr::null_mut() {
                 panic!("cannot create the window");
             }
             let window = LocalWindow::new(
-                GetModuleHandleW(std::ptr::null_mut()),
                 hwnd,
                 WindowState {
                     title: self.title.as_ref().to_string(),
@@ -318,6 +322,22 @@ where
             }
             if self.accept_drag_files {
                 DragAcceptFiles(hwnd, TRUE);
+            }
+            if let Some(icon) = self.icon {
+                let big = load_icon(&icon, hinst);
+                let small = load_small_icon(&icon, hinst);
+                SendMessageW(
+                    handle.raw_handle() as _,
+                    WM_SETICON,
+                    ICON_BIG as WPARAM,
+                    big as LPARAM,
+                );
+                SendMessageW(
+                    handle.raw_handle() as _,
+                    WM_SETICON,
+                    ICON_SMALL as WPARAM,
+                    small as LPARAM,
+                );
             }
             push_window(hwnd, window);
             handle
@@ -345,10 +365,9 @@ pub(crate) struct LocalWindow {
 }
 
 impl LocalWindow {
-    pub(crate) fn new(hinstance: HINSTANCE, hwnd: HWND, state: WindowState) -> Self {
+    pub(crate) fn new(hwnd: HWND, state: WindowState) -> Self {
         Self {
             handle: Window {
-                hinstance: InstanceHandle(hinstance),
                 hwnd: WindowHandle(hwnd),
                 state: Arc::new(RwLock::new(state)),
             },
@@ -360,7 +379,6 @@ impl LocalWindow {
 /// The object is like Window, can send to other threads.
 #[derive(Clone)]
 pub struct Window {
-    pub(crate) hinstance: InstanceHandle,
     pub(crate) hwnd: WindowHandle,
     pub(crate) state: Arc<RwLock<WindowState>>,
 }
@@ -514,7 +532,7 @@ impl Window {
 unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         RawWindowHandle::Windows(WindowsHandle {
-            hinstance: self.hinstance.0.clone() as _,
+            hinstance: unsafe { GetWindowLongPtrW(self.hwnd.0, GWLP_HINSTANCE) as _ },
             hwnd: self.hwnd.0.clone() as _,
             ..WindowsHandle::empty()
         })

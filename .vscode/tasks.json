@@ -170,6 +170,40 @@
 				},
 				"cwd": "${workspaceFolder}"
 			}
+		},
+		{
+			"label": "build icon",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "icon"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "build icon_resource",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "icon_resource"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}/examples/icon_resource"
+			}
 		}
 	]
 }

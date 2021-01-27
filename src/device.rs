@@ -139,7 +139,7 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
                 } else {
                     Err(serde::de::Error::custom("invalid value"))
                 }
-            },
+            }
             _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()

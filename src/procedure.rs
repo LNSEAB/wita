@@ -157,13 +157,9 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 });
                 0
             }
-            WM_LBUTTONDOWN => mouse_input::<T>(
-                handle,
-                MouseButton::Left,
-                KeyState::Pressed,
-                wparam,
-                lparam,
-            ),
+            WM_LBUTTONDOWN => {
+                mouse_input::<T>(handle, MouseButton::Left, KeyState::Pressed, wparam, lparam)
+            }
             WM_RBUTTONDOWN => mouse_input::<T>(
                 handle,
                 MouseButton::Right,
