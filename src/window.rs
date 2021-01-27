@@ -16,6 +16,13 @@ use winapi::um::{
     wingdi::{GetStockObject, WHITE_BRUSH},
     winuser::*,
 };
+use raw_window_handle::{RawWindowHandle, windows::WindowsHandle, HasRawWindowHandle};
+
+#[derive(Clone)]
+pub(crate) struct InstanceHandle(HINSTANCE);
+
+unsafe impl Send for InstanceHandle {}
+unsafe impl Sync for InstanceHandle {}
 
 #[derive(Clone)]
 pub(crate) struct WindowHandle(HWND);
@@ -287,6 +294,7 @@ where
                 panic!("cannot create the window");
             }
             let window = LocalWindow::new(
+                GetModuleHandleW(std::ptr::null_mut()),
                 hwnd,
                 WindowState {
                     title: self.title.as_ref().to_string(),
@@ -337,9 +345,10 @@ pub(crate) struct LocalWindow {
 }
 
 impl LocalWindow {
-    pub(crate) fn new(hwnd: HWND, state: WindowState) -> Self {
+    pub(crate) fn new(hinstance: HINSTANCE, hwnd: HWND, state: WindowState) -> Self {
         Self {
             handle: Window {
+                hinstance: InstanceHandle(hinstance),
                 hwnd: WindowHandle(hwnd),
                 state: Arc::new(RwLock::new(state)),
             },
@@ -351,6 +360,7 @@ impl LocalWindow {
 /// The object is like Window, can send to other threads.
 #[derive(Clone)]
 pub struct Window {
+    pub(crate) hinstance: InstanceHandle,
     pub(crate) hwnd: WindowHandle,
     pub(crate) state: Arc<RwLock<WindowState>>,
 }
@@ -445,10 +455,6 @@ impl Window {
         }
     }
 
-    pub fn raw_handle(&self) -> *const std::ffi::c_void {
-        self.hwnd.0 as _
-    }
-
     pub fn ime_position(&self) -> PhysicalPosition<i32> {
         let state = self.state.read().unwrap();
         PhysicalPosition {
@@ -498,5 +504,19 @@ impl Window {
                 (if enabled { TRUE } else { FALSE }) as LPARAM,
             );
         }
+    }
+
+    pub fn raw_handle(&self) -> *mut std::ffi::c_void {
+        self.hwnd.0.clone() as _
+    }
+}
+
+unsafe impl HasRawWindowHandle for Window {
+    fn raw_window_handle(&self) -> RawWindowHandle {
+        RawWindowHandle::Windows(WindowsHandle {
+            hinstance: self.hinstance.0.clone() as _,
+            hwnd: self.hwnd.0.clone() as _,
+            ..WindowsHandle::empty()
+        })
     }
 }
