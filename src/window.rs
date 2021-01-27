@@ -286,7 +286,7 @@ where
             if hwnd == std::ptr::null_mut() {
                 panic!("cannot create the window");
             }
-            let window = Window::new(
+            let window = LocalWindow::new(
                 hwnd,
                 WindowState {
                     title: self.title.as_ref().to_string(),
@@ -296,21 +296,23 @@ where
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
+                    children: self.children,
                     closed: false,
                 },
-                self.children,
             );
+            let handle = window.handle.clone();
             if let Some(parent) = self.parent {
-                parent.children.borrow_mut().push(window.clone());
+                let mut state = parent.state.write().unwrap();
+                state.children.push(handle.clone());
             }
             if self.visibility {
-                window.show();
+                window.handle.show();
             }
             if self.accept_drag_files {
                 DragAcceptFiles(hwnd, TRUE);
             }
-            push_window(hwnd, window.clone());
-            window
+            push_window(hwnd, window);
+            handle
         }
     }
 }
@@ -323,188 +325,37 @@ pub(crate) struct WindowState {
     pub visible_ime_composition_window: bool,
     pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
+    pub children: Vec<Window>,
     pub closed: bool,
 }
 
 /// Represents a window.
 #[derive(Clone)]
-pub struct Window {
-    hwnd: WindowHandle,
-    pub(crate) state: Arc<RwLock<WindowState>>,
-    pub(crate) ime_context: Rc<RefCell<ImmContext>>,
-    pub(crate) children: Rc<RefCell<Vec<Window>>>,
+pub(crate) struct LocalWindow {
+    pub handle: Window,
+    pub ime_context: Rc<RefCell<ImmContext>>,
 }
 
-impl Window {
-    pub(crate) fn new(hwnd: HWND, state: WindowState, children: Vec<Window>) -> Self {
+impl LocalWindow {
+    pub(crate) fn new(hwnd: HWND, state: WindowState) -> Self {
         Self {
-            hwnd: WindowHandle(hwnd),
-            state: Arc::new(RwLock::new(state)),
+            handle: Window {
+                hwnd: WindowHandle(hwnd),
+                state: Arc::new(RwLock::new(state)),
+            },
             ime_context: Rc::new(RefCell::new(ImmContext::new(hwnd))),
-            children: Rc::new(RefCell::new(children)),
-        }
-    }
-
-    pub fn title(&self) -> String {
-        let state = self.state.read().unwrap();
-        state.title.clone()
-    }
-
-    pub fn set_title(&self, title: impl AsRef<str>) {
-        let mut state = self.state.write().unwrap();
-        state.title = title.as_ref().to_string();
-        unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetTitle as usize, 0);
-        }
-    }
-
-    pub fn position(&self) -> ScreenPosition {
-        unsafe {
-            let mut rc = RECT::default();
-            GetWindowRect(self.hwnd.0, &mut rc);
-            ScreenPosition::new(rc.left, rc.top)
-        }
-    }
-
-    pub fn set_position(&self, position: ScreenPosition) {
-        unsafe {
-            let mut state = self.state.write().unwrap();
-            state.set_position = position;
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetPosition as usize, 0);
-        }
-    }
-
-    pub fn inner_size(&self) -> PhysicalSize<u32> {
-        unsafe {
-            let mut rc = RECT::default();
-            GetClientRect(self.hwnd.0, &mut rc);
-            PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32)
-        }
-    }
-
-    pub fn set_inner_size(&self, size: impl ToPhysicalSize<u32>) {
-        unsafe {
-            let mut state = self.state.write().unwrap();
-            state.set_inner_size = size.to_physical(self.dpi());
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
-        }
-    }
-
-    pub fn dpi(&self) -> u32 {
-        unsafe { GetDpiForWindow(self.hwnd.0) }
-    }
-
-    pub fn scale_factor(&self) -> f32 {
-        unsafe { GetDpiForWindow(self.hwnd.0) as f32 / DEFAULT_DPI as f32 }
-    }
-
-    pub fn show(&self) {
-        unsafe {
-            ShowWindowAsync(self.hwnd.0, SW_SHOW);
-        }
-    }
-
-    pub fn hide(&self) {
-        unsafe {
-            ShowWindowAsync(self.hwnd.0, SW_HIDE);
-        }
-    }
-
-    pub fn redraw(&self) {
-        unsafe {
-            RedrawWindow(
-                self.hwnd.0,
-                std::ptr::null(),
-                std::ptr::null_mut(),
-                RDW_INTERNALPAINT,
-            );
-        }
-    }
-
-    pub fn is_closed(&self) -> bool {
-        let state = self.state.read().unwrap();
-        state.closed
-    }
-
-    pub fn close(&self) {
-        unsafe {
-            if !self.is_closed() {
-                PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
-            }
-        }
-    }
-
-    pub fn raw_handle(&self) -> *const std::ffi::c_void {
-        self.hwnd.0 as _
-    }
-
-    pub fn ime_position(&self) -> PhysicalPosition<i32> {
-        let state = self.state.read().unwrap();
-        PhysicalPosition {
-            x: state.ime_position.x,
-            y: state.ime_position.y,
-        }
-    }
-
-    pub fn enable_ime(&self) {
-        unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
-        }
-    }
-
-    pub fn disable_ime(&self) {
-        unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
-        }
-    }
-
-    pub fn set_ime_position(&self, position: impl ToPhysicalPosition<i32>) {
-        let mut state = self.state.write().unwrap();
-        let position = position.to_physical(self.dpi() as i32);
-        state.ime_position.x = position.x;
-        state.ime_position.y = position.y;
-    }
-
-    pub fn style(&self) -> WindowStyle {
-        let state = self.state.read().unwrap();
-        WindowStyle(state.style as DWORD)
-    }
-
-    pub fn set_style(&self, style: impl Style) {
-        unsafe {
-            let mut state = self.state.write().unwrap();
-            state.style = style.value();
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetStyle as usize, 0);
-        }
-    }
-
-    pub fn accept_drag_files(&self, enabled: bool) {
-        unsafe {
-            PostMessageW(
-                self.hwnd.0,
-                WM_USER,
-                UserMessage::AcceptDragFiles as usize,
-                (if enabled { TRUE } else { FALSE }) as LPARAM,
-            );
-        }
-    }
-
-    pub fn proxy(&self) -> WindowProxy {
-        WindowProxy {
-            hwnd: self.hwnd.clone(),
-            state: self.state.clone(),
         }
     }
 }
 
 /// The object is like Window, can send to other threads.
 #[derive(Clone)]
-pub struct WindowProxy {
-    hwnd: WindowHandle,
-    state: Arc<RwLock<WindowState>>,
+pub struct Window {
+    pub(crate) hwnd: WindowHandle,
+    pub(crate) state: Arc<RwLock<WindowState>>,
 }
 
-impl WindowProxy {
+impl Window {
     pub fn title(&self) -> String {
         let state = self.state.read().unwrap();
         state.title.clone()

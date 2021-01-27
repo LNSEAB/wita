@@ -101,11 +101,12 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             return DefWindowProcW(hwnd, msg, wparam, lparam);
         }
         let window = window.unwrap();
+        let handle = &window.handle;
         match msg {
             WM_PAINT => {
                 let mut ps = PAINTSTRUCT::default();
                 BeginPaint(hwnd, &mut ps);
-                call_handler(|eh: &mut T, _| eh.draw(&window));
+                call_handler(|eh: &mut T, _| eh.draw(handle));
                 EndPaint(hwnd, &ps);
                 0
             }
@@ -122,7 +123,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         });
                         state.entered_window = Some(window.clone());
                         eh.cursor_entered(
-                            &window,
+                            handle,
                             MouseState {
                                 position,
                                 buttons: &state.mouse_buttons,
@@ -130,7 +131,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         );
                     } else {
                         eh.cursor_moved(
-                            &window,
+                            handle,
                             MouseState {
                                 position,
                                 buttons: &state.mouse_buttons,
@@ -147,7 +148,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     let mut pos = POINT::default();
                     GetCursorPos(&mut pos);
                     eh.cursor_leaved(
-                        &window,
+                        handle,
                         MouseState {
                             position: PhysicalPosition::new(pos.x, pos.y),
                             buttons: &mut state.mouse_buttons,
@@ -157,72 +158,72 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 0
             }
             WM_LBUTTONDOWN => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Left,
                 KeyState::Pressed,
                 wparam,
                 lparam,
             ),
             WM_RBUTTONDOWN => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Right,
                 KeyState::Pressed,
                 wparam,
                 lparam,
             ),
             WM_MBUTTONDOWN => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Middle,
                 KeyState::Pressed,
                 wparam,
                 lparam,
             ),
             WM_XBUTTONDOWN => mouse_input::<T>(
-                &window,
+                handle,
                 wparam_to_button(wparam),
                 KeyState::Pressed,
                 wparam,
                 lparam,
             ),
             WM_LBUTTONUP => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Left,
                 KeyState::Released,
                 wparam,
                 lparam,
             ),
             WM_RBUTTONUP => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Right,
                 KeyState::Released,
                 wparam,
                 lparam,
             ),
             WM_MBUTTONUP => mouse_input::<T>(
-                &window,
+                handle,
                 MouseButton::Middle,
                 KeyState::Released,
                 wparam,
                 lparam,
             ),
             WM_XBUTTONUP => mouse_input::<T>(
-                &window,
+                handle,
                 wparam_to_button(wparam),
                 KeyState::Released,
                 wparam,
                 lparam,
             ),
-            WM_KEYDOWN => key_input::<T>(&window, KeyState::Pressed, wparam, lparam),
-            WM_KEYUP => key_input::<T>(&window, KeyState::Released, wparam, lparam),
+            WM_KEYDOWN => key_input::<T>(handle, KeyState::Pressed, wparam, lparam),
+            WM_KEYUP => key_input::<T>(handle, KeyState::Released, wparam, lparam),
             WM_CHAR => {
                 call_handler(|eh: &mut T, _| {
-                    std::char::from_u32(wparam as u32).map(|c| eh.char_input(&window, c));
+                    std::char::from_u32(wparam as u32).map(|c| eh.char_input(handle, c));
                 });
                 0
             }
             WM_IME_SETCONTEXT => {
                 let lparam = {
-                    let state = window.state.read().unwrap();
+                    let state = handle.state.read().unwrap();
                     let mut lparam = lparam;
                     if !state.visible_ime_composition_window {
                         lparam &= !ISC_SHOWUICOMPOSITIONWINDOW;
@@ -239,7 +240,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_IME_STARTCOMPOSITION => {
                 let imc = Imc::get(hwnd);
-                let state = window.state.read().unwrap();
+                let state = handle.state.read().unwrap();
                 if state.visible_ime_composition_window {
                     imc.set_composition_window_position(state.ime_position);
                 }
@@ -250,7 +251,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     );
                 }
                 call_handler(|eh: &mut T, _| {
-                    eh.ime_start_composition(&window);
+                    eh.ime_start_composition(handle);
                 });
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
@@ -265,7 +266,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                                 imc.get_composition_string(GCS_COMPATTR)
                             {
                                 eh.ime_composition(
-                                    &window,
+                                    handle,
                                     &ime::Composition::new(s, attrs),
                                     imc.get_candidate_list().as_ref(),
                                 );
@@ -279,13 +280,13 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                             if let Some(CompositionString::CompAttr(attrs)) =
                                 imc.get_composition_string(GCS_COMPATTR)
                             {
-                                eh.ime_composition(&window, &ime::Composition::new(s, attrs), None);
+                                eh.ime_composition(handle, &ime::Composition::new(s, attrs), None);
                             }
                         }
                     }
                 });
                 let show_composition_window = {
-                    let state = window.state.read().unwrap();
+                    let state = handle.state.read().unwrap();
                     state.visible_ime_composition_window
                 };
                 if show_composition_window {
@@ -303,15 +304,15 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     } else {
                         None
                     };
-                    eh.ime_end_composition(&window, ret);
+                    eh.ime_end_composition(handle, ret);
                 });
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_ACTIVATE => {
                 if (wparam & WA_ACTIVE as WPARAM) != 0 || (wparam & WA_CLICKACTIVE as WPARAM) != 0 {
-                    call_handler(|eh: &mut T, _| eh.activated(&window));
+                    call_handler(|eh: &mut T, _| eh.activated(handle));
                 } else {
-                    call_handler(|eh: &mut T, _| eh.inactivated(&window));
+                    call_handler(|eh: &mut T, _| eh.inactivated(handle));
                 }
                 0
             }
@@ -320,9 +321,9 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 let size = PhysicalSize::new(LOWORD(value) as u32, HIWORD(value) as u32);
                 call_handler(|eh: &mut T, state| {
                     if state.resizing {
-                        eh.resizing(&window, size);
+                        eh.resizing(handle, size);
                     } else {
-                        eh.resized(&window, size);
+                        eh.resized(handle, size);
                     }
                 });
                 0
@@ -331,7 +332,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 let pos = &*(lparam as *const WINDOWPOS);
                 if pos.flags & SWP_NOMOVE == 0 {
                     call_handler(|eh: &mut T, _| {
-                        eh.moved(&window, ScreenPosition::new(pos.x, pos.y))
+                        eh.moved(handle, ScreenPosition::new(pos.x, pos.y))
                     });
                 }
                 DefWindowProcW(hwnd, msg, wparam, lparam)
@@ -342,8 +343,8 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_EXITSIZEMOVE => {
                 context_mut(|ctx| ctx.state_mut().resizing = false);
-                let size = window.inner_size();
-                call_handler(|eh: &mut T, _| eh.resized(&window, size));
+                let size = handle.inner_size();
+                call_handler(|eh: &mut T, _| eh.resized(handle, size));
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_DPICHANGED => {
@@ -357,7 +358,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     rc.bottom - rc.top,
                     SWP_NOZORDER | SWP_NOACTIVATE,
                 );
-                call_handler(|eh: &mut T, _| eh.dpi_changed(&window));
+                call_handler(|eh: &mut T, _| eh.dpi_changed(handle));
                 0
             }
             WM_GETDPISCALEDSIZE => {
@@ -398,7 +399,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 DragQueryPoint(hdrop, &mut pt);
                 call_handler(|eh: &mut T, _| {
                     eh.drop_files(
-                        &window,
+                        handle,
                         &files_ref,
                         PhysicalPosition::new(pt.x as f32, pt.y as f32),
                     );
@@ -408,13 +409,14 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_DESTROY => {
                 {
-                    let mut state = window.state.write().unwrap();
+                    let mut state = handle.state.write().unwrap();
                     state.closed = true;
                 }
                 call_handler(|eh: &mut T, _| {
-                    eh.closed(&window);
+                    eh.closed(handle);
                     {
-                        for child in window.children.borrow().iter() {
+                        let state = handle.state.read().unwrap();
+                        for child in state.children.iter() {
                             child.close();
                         }
                     }
@@ -432,7 +434,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             WM_USER => {
                 match wparam {
                     w if w == UserMessage::SetTitle as usize => {
-                        let state = window.state.read().unwrap();
+                        let state = handle.state.read().unwrap();
                         let s = state
                             .title
                             .encode_utf16()
@@ -441,7 +443,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         SetWindowTextW(hwnd, s.as_ptr());
                     }
                     w if w == UserMessage::SetPosition as usize => {
-                        let state = window.state.read().unwrap();
+                        let state = handle.state.read().unwrap();
                         SetWindowPos(
                             hwnd,
                             std::ptr::null_mut(),
@@ -453,7 +455,7 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         );
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
-                        let state = window.state.read().unwrap();
+                        let state = handle.state.read().unwrap();
                         let rc = adjust_window_rect(
                             state.set_inner_size,
                             GetWindowLongPtrW(hwnd, GWL_STYLE) as u32,
@@ -478,11 +480,11 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                     }
                     w if w == UserMessage::SetStyle as usize => {
                         let style = {
-                            let state = window.state.read().unwrap();
+                            let state = handle.state.read().unwrap();
                             state.style
                         };
                         let rc = adjust_window_rect(
-                            window.inner_size().to_physical(window.dpi()),
+                            handle.inner_size().to_physical(handle.dpi()),
                             style,
                             0,
                             GetDpiForWindow(hwnd),

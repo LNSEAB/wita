@@ -1,4 +1,4 @@
-use crate::{device::*, event::EventHandler, window::Window};
+use crate::{device::*, event::EventHandler, window::LocalWindow};
 use std::any::Any;
 use std::cell::RefCell;
 use std::panic::resume_unwind;
@@ -12,7 +12,7 @@ pub enum RunType {
 
 pub(crate) struct ContextState {
     pub mouse_buttons: Vec<MouseButton>,
-    pub entered_window: Option<Window>,
+    pub entered_window: Option<LocalWindow>,
     pub resizing: bool,
 }
 
@@ -28,7 +28,7 @@ impl ContextState {
 
 pub(crate) struct Context {
     state: ContextState,
-    window_table: Vec<(HWND, Window)>,
+    window_table: Vec<(HWND, LocalWindow)>,
     event_handler: Option<Box<dyn Any>>,
     unwind: Option<Box<dyn Any + Send>>,
 }
@@ -76,12 +76,12 @@ where
 }
 
 #[inline]
-pub fn push_window(hwnd: HWND, wnd: Window) {
+pub(crate) fn push_window(hwnd: HWND, wnd: LocalWindow) {
     context_mut(|ctx| ctx.window_table.push((hwnd, wnd)))
 }
 
 #[inline]
-pub fn find_window(hwnd: HWND) -> Option<Window> {
+pub(crate) fn find_window(hwnd: HWND) -> Option<LocalWindow> {
     context_ref(|ctx| {
         ctx.window_table.iter().find_map(
             |(h, wnd)| {
