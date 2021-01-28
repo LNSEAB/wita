@@ -19,7 +19,7 @@ use winapi::um::{
     winuser::*,
 };
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct WindowHandle(HWND);
 
 unsafe impl Send for WindowHandle {}
@@ -528,6 +528,14 @@ impl Window {
         self.hwnd.0.clone() as _
     }
 }
+
+impl PartialEq for Window {
+    fn eq(&self, other: &Self) -> bool {
+        self.hwnd == other.hwnd
+    }
+}
+
+impl Eq for Window {}
 
 unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {

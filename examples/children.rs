@@ -20,5 +20,7 @@ fn main() {
         };
         windows.push(window.build());
     }
+    println!("window 0 == window 0: {}", windows[0] == windows[0]);
+    println!("window 0 == window 1: {}", windows[0] == windows[1]);
     wita::run(wita::RunType::Wait, Application);
 }
