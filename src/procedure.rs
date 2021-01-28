@@ -334,11 +334,11 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_ENTERSIZEMOVE => {
-                context_mut(|ctx| ctx.state_mut().resizing = true);
+                set_resizing(true);
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_EXITSIZEMOVE => {
-                context_mut(|ctx| ctx.state_mut().resizing = false);
+                set_resizing(false);
                 let size = handle.inner_size();
                 call_handler(|eh: &mut T, _| eh.resized(handle, size));
                 DefWindowProcW(hwnd, msg, wparam, lparam)

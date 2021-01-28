@@ -42,47 +42,33 @@ impl Context {
             unwind: None,
         }
     }
-
-    pub fn state_mut(&mut self) -> &mut ContextState {
-        &mut self.state
-    }
 }
 
 thread_local! {
-    static CONTEXT: RefCell<Option<Context>> = RefCell::new(None);
+    static CONTEXT: RefCell<*mut Context> = RefCell::new(std::ptr::null_mut());
 }
 
 #[inline]
 pub fn create_context() {
     CONTEXT.with(|ctx| {
-        *ctx.borrow_mut() = Some(Context::new());
+        *ctx.borrow_mut() = Box::into_raw(Box::new(Context::new()));
     });
 }
 
 #[inline]
-pub(crate) fn context_ref<F, R>(f: F) -> R
-where
-    F: FnOnce(&Context) -> R,
-{
-    CONTEXT.with(|ctx| f(ctx.borrow().as_ref().unwrap()))
-}
-
-#[inline]
-pub(crate) fn context_mut<F, R>(f: F) -> R
-where
-    F: FnOnce(&mut Context) -> R,
-{
-    CONTEXT.with(|ctx| f(ctx.borrow_mut().as_mut().unwrap()))
-}
-
-#[inline]
 pub(crate) fn push_window(hwnd: HWND, wnd: LocalWindow) {
-    context_mut(|ctx| ctx.window_table.push((hwnd, wnd)))
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
+        ctx.window_table.push((hwnd, wnd));
+    }
 }
 
 #[inline]
 pub(crate) fn find_window(hwnd: HWND) -> Option<LocalWindow> {
-    context_ref(|ctx| {
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &*p;
         ctx.window_table.iter().find_map(
             |(h, wnd)| {
                 if *h == hwnd {
@@ -92,29 +78,48 @@ pub(crate) fn find_window(hwnd: HWND) -> Option<LocalWindow> {
                 }
             },
         )
-    })
+    }
 }
 
 #[inline]
 pub fn remove_window(hwnd: HWND) {
-    context_mut(|ctx| {
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
         ctx.window_table.remove(
             ctx.window_table
                 .iter()
                 .position(|(h, _)| *h == hwnd)
                 .unwrap(),
         );
-    })
+    }
 }
 
 #[inline]
 pub fn window_table_is_empty() -> bool {
-    context_ref(|ctx| ctx.window_table.is_empty())
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &*p;
+        ctx.window_table.is_empty()
+    }
+}
+
+#[inline]
+pub fn set_resizing(state: bool) {
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
+        ctx.state.resizing = state;
+    }
 }
 
 #[inline]
 pub fn set_event_handler(eh: impl EventHandler + 'static) {
-    context_mut(|ctx| ctx.event_handler = Some(Box::new(eh)));
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
+        ctx.event_handler = Some(Box::new(eh));
+    }
 }
 
 #[inline]
@@ -123,7 +128,9 @@ where
     F: FnOnce(&mut T, &mut ContextState),
     T: EventHandler + 'static,
 {
-    context_mut(|ctx| {
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
         let event_handler = ctx
             .event_handler
             .as_mut()
@@ -131,26 +138,34 @@ where
             .downcast_mut::<T>()
             .unwrap();
         f(event_handler, &mut ctx.state);
-    });
+    }
 }
 
 #[inline]
 pub fn set_unwind(e: Box<dyn Any + Send>) {
-    context_mut(|ctx| ctx.unwind = Some(e));
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
+        ctx.unwind = Some(e);
+    }
 }
 
 #[inline]
 pub fn maybe_resume_unwind() {
-    context_mut(|ctx| {
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
         if let Some(e) = ctx.unwind.take() {
             resume_unwind(e);
         }
-    });
+    }
 }
 
 #[inline]
 pub fn destroy_context() {
-    CONTEXT.with(|ctx| {
-        *ctx.borrow_mut() = None;
-    })
+    CONTEXT.with(|ctx| unsafe {
+        let mut p = ctx.borrow_mut();
+        Box::from_raw(*p);
+        *p = std::ptr::null_mut();
+    });
 }

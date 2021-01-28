@@ -148,7 +148,7 @@
 			"name": "icon_resource",
 			"type": "cppvsdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/target/debug/examples/icon_resource.exe",
+			"program": "${workspaceFolder}/examples/icon_resource/target/debug/icon_resource.exe",
 			"args": [],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/examples/icon_resource",

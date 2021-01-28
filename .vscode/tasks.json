@@ -192,7 +192,6 @@
 			"label": "build icon_resource",
 			"type": "cargo",
 			"command": "build",
-			"args": ["--example", "icon_resource"],
 			"problemMatcher": [
 				"$rustc"
 			],
