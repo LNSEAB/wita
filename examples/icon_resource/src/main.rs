@@ -3,7 +3,7 @@ struct Application;
 impl Application {
     fn new() -> Self {
         wita::WindowBuilder::new()
-            .title("icon_resource")
+            .title("wita icon_resource")
             .icon(wita::Icon::Resource(111))
             .build();
         Self

@@ -3,7 +3,7 @@ struct Application;
 impl Application {
     fn new() -> Self {
         wita::WindowBuilder::new()
-            .title("icon")
+            .title("wita icon")
             .icon(wita::Icon::from_path("examples/icon.ico"))
             .build();
         Self

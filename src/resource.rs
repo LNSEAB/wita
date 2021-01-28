@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
+use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
 use winapi::um::winuser::*;
-use winapi::shared::minwindef::*;
 
 pub enum Icon {
     Resource(u16),
@@ -17,14 +17,9 @@ impl Icon {
 fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
     let icon = unsafe {
         match icon {
-            Icon::Resource(id) => LoadImageW(
-                hinst,
-                MAKEINTRESOURCEW(*id),
-                IMAGE_ICON,
-                cx,
-                cy,
-                LR_SHARED,
-            ),
+            Icon::Resource(id) => {
+                LoadImageW(hinst, MAKEINTRESOURCEW(*id), IMAGE_ICON, cx, cy, LR_SHARED)
+            }
             Icon::File(path) => {
                 let wpath = path
                     .to_string_lossy()
