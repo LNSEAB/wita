@@ -8,6 +8,16 @@ pub trait EventHandler {
     /// only passed `RunType::Idle` to `Context::run`.
     fn idle(&mut self) {}
 
+    /// This is called at the beginning of a frame.
+    ///
+    /// only passed `RunType::Idle` to `Context::run`.
+    fn begin_frame(&mut self) {}
+
+    /// This is called at the end of a frame.
+    ///
+    /// only passed `RunType::Idle` to `Context::run`.
+    fn end_frame(&mut self) {}
+
     /// This is called when the window needs redrawing.
     fn draw(&mut self, _: &Window) {}
 

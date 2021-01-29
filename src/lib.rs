@@ -106,6 +106,7 @@ pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
     match run_type {
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
+                call_handler(|eh: &mut T, _| eh.begin_frame());
                 if PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
@@ -113,6 +114,7 @@ pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
                     call_handler(|eh: &mut T, _| eh.idle());
                 }
                 maybe_resume_unwind();
+                call_handler(|eh: &mut T, _| eh.end_frame());
             }
         },
         RunType::Wait => unsafe {
