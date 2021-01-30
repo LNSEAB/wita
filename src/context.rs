@@ -131,13 +131,15 @@ where
     let p = CONTEXT.with(|ctx| *ctx.borrow());
     unsafe {
         let ctx = &mut *p;
-        let event_handler = ctx
-            .event_handler
-            .as_mut()
-            .unwrap()
-            .downcast_mut::<T>()
-            .unwrap();
-        f(event_handler, &mut ctx.state);
+        if ctx.event_handler.is_some() {
+            let event_handler = ctx
+                .event_handler
+                .as_mut()
+                .unwrap()
+                .downcast_mut::<T>()
+                .unwrap();
+            f(event_handler, &mut ctx.state);
+        }
     }
 }
 
@@ -146,6 +148,7 @@ pub fn set_unwind(e: Box<dyn Any + Send>) {
     let p = CONTEXT.with(|ctx| *ctx.borrow());
     unsafe {
         let ctx = &mut *p;
+        ctx.event_handler = None;
         ctx.unwind = Some(e);
     }
 }

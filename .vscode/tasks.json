@@ -203,6 +203,23 @@
 				},
 				"cwd": "${workspaceFolder}/examples/icon_resource"
 			}
+		},
+		{
+			"label": "build panic_in_event",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "panic_in_event"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

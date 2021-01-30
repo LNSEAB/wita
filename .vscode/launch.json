@@ -156,6 +156,19 @@
 			"externalConsole": false,
 			"preLaunchTask": "build icon_resource",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "panic_in_event",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/panic_in_event.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"preLaunchTask": "build panic_in_event",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }
