@@ -1,3 +1,5 @@
+#[cfg(feature = "raw_input")]
+use crate::raw_input;
 use crate::{device::*, geometry::*, ime::*, window::Window};
 use std::path::Path;
 
@@ -71,4 +73,17 @@ pub trait EventHandler {
 
     /// This is called when files have been dropped on the window.
     fn drop_files(&mut self, _: &Window, _: &[&Path], _: PhysicalPosition<f32>) {}
+
+    /// This is called when has been inputed raw data.
+    #[cfg(feature = "raw_input")]
+    fn raw_input(&mut self, _: &Window, _: &raw_input::InputData) {}
+
+    #[cfg(feature = "raw_input")]
+    fn raw_input_device_change(
+        &mut self,
+        _: &Window,
+        _: &raw_input::Device,
+        _: raw_input::DeviceChangeState,
+    ) {
+    }
 }

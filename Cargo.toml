@@ -12,7 +12,12 @@ repository = "https://github.com/LNSEAB/wita"
 documentation = "https://docs.rs/wita"
 
 [package.metadata.docs.rs]
+targets = ["x86_64-pc-windows-msvc"]
 default-target = "x86_64-pc-windows-msvc"
+all-featurse = true
+
+[features]
+raw_input = ["winapi/hidusage", "winapi/hidpi"]
 
 [dependencies]
 winapi = { version = "0.3.9", features = [
@@ -22,10 +27,16 @@ winapi = { version = "0.3.9", features = [
 	"shellscalingapi",
 	"windowsx",
 	"imm",
+	"hidsdi",
+	"hidpi",
 	"winerror",
 	"shellapi",
+	"errhandlingapi",
+	"fileapi",
+	"handleapi",
 	"impl-default",
 ] }
 serde = { version = "1.0.114", features = ["derive"] }
 num = "0.3.1"
 raw-window-handle = "0.3.3"
+log = "0.4.14"

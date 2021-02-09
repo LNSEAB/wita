@@ -8,7 +8,7 @@ impl Application {
 }
 
 impl wita::EventHandler for Application {
-    fn activated(&mut self, _: &wita::Window) { 
+    fn activated(&mut self, _: &wita::Window) {
         panic!("awawawawa");
     }
 }

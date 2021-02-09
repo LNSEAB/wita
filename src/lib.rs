@@ -74,8 +74,12 @@ mod geometry;
 pub mod ime;
 mod monitor;
 mod procedure;
+#[cfg(feature = "raw_input")]
+pub mod raw_input;
 mod resource;
 mod window;
+#[macro_use]
+mod error;
 
 pub use context::RunType;
 pub use device::*;

@@ -10,6 +10,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -27,6 +30,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -44,6 +50,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -61,6 +70,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -78,6 +90,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -95,6 +110,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -112,6 +130,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -129,6 +150,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -146,6 +170,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -163,6 +190,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -180,6 +210,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -196,6 +229,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
@@ -213,6 +249,9 @@
 				"$rustc"
 			],
 			"group": "build",
+			"presentation": {
+				"reveal": "silent",
+			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",

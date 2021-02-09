@@ -1,3 +1,5 @@
+#[cfg(feature = "raw_input")]
+use crate::raw_input;
 use crate::{api::*, context::*, device::*, event::EventHandler, geometry::*, ime, window::Window};
 use std::panic::catch_unwind;
 use std::path::PathBuf;
@@ -110,6 +112,8 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 EndPaint(hwnd, &ps);
                 0
             }
+            #[cfg(feature = "raw_input")]
+            WM_INPUT => raw_input::wm_input::<T>(handle, hwnd, wparam, lparam),
             WM_MOUSEMOVE => {
                 call_handler(|eh: &mut T, state| {
                     let position = lparam_to_point(lparam);
@@ -402,6 +406,10 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                 });
                 DragFinish(hdrop);
                 0
+            }
+            #[cfg(feature = "raw_input")]
+            WM_INPUT_DEVICE_CHANGE => {
+                raw_input::wm_input_device_change::<T>(handle, hwnd, wparam, lparam)
             }
             WM_DESTROY => {
                 {

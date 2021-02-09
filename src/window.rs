@@ -1,3 +1,5 @@
+#[cfg(feature = "raw_input")]
+use crate::raw_input;
 use crate::DEFAULT_DPI;
 use crate::{
     api::*,
@@ -339,6 +341,8 @@ where
                     small as LPARAM,
                 );
             }
+            #[cfg(feature = "raw_input")]
+            raw_input::register_devices(&window.handle, raw_input::InputOccurence::Foreground);
             push_window(hwnd, window);
             handle
         }
