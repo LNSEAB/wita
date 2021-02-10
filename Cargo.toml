@@ -1,6 +1,6 @@
 [package]
 name = "wita"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["LNSEAB <691752+LNSEAB@users.noreply.github.com>"]
 edition = "2018"
 keywords = ["windows"]
