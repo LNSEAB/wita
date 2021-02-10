@@ -1,17 +1,19 @@
 use crate::geometry::*;
-use serde::de::*;
-use serde::*;
+#[cfg(feature = "serde")]
+use serde::{de::*, *};
 use winapi::um::winuser::*;
 
 /// Describes the state of a keyboard key and a mouse button.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum KeyState {
     Pressed,
     Released,
 }
 
 /// Describes mouse buttons.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MouseButton {
     Left,
     Right,
@@ -69,6 +71,7 @@ pub enum VirtualKey {
     Other(u32),
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for VirtualKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -84,8 +87,10 @@ impl Serialize for VirtualKey {
     }
 }
 
+#[cfg(feature = "serde")]
 struct VirtualKeyVisitor;
 
+#[cfg(feature = "serde")]
 impl<'de> Visitor<'de> for VirtualKeyVisitor {
     type Value = VirtualKey;
 
@@ -160,6 +165,7 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for VirtualKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -170,7 +176,8 @@ impl<'de> Deserialize<'de> for VirtualKey {
 }
 
 /// A keyboard scan code
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ScanCode(pub u32);
 
 /// A virtual key and a scan code.

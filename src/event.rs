@@ -74,10 +74,11 @@ pub trait EventHandler {
     /// This is called when files have been dropped on the window.
     fn drop_files(&mut self, _: &Window, _: &[&Path], _: PhysicalPosition<f32>) {}
 
-    /// This is called when has been inputed raw data.
+    /// This is called when raw data has been inputed.
     #[cfg(feature = "raw_input")]
     fn raw_input(&mut self, _: &Window, _: &raw_input::InputData) {}
 
+    /// This is called when a device state has been changead.
     #[cfg(feature = "raw_input")]
     fn raw_input_device_change(
         &mut self,
