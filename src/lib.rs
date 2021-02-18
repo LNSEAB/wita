@@ -94,7 +94,7 @@ use std::ptr::null_mut;
 use winapi::um::winuser::*;
 
 /// The value is an unit in logical coordinates.
-pub const DEFAULT_DPI: i32 = 9;
+pub const DEFAULT_DPI: i32 = 96;
 
 /// Initialize `wita`.
 pub fn initialize<T: EventHandler + 'static>() {
