@@ -116,7 +116,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     accept_drag_files: bool,
     icon: Option<Icon>,
     #[cfg(feature = "raw_input")]
-    input_occurence: raw_input::InputOccurence,
+    raw_input_window_state: raw_input::WindowState,
 }
 
 impl WindowBuilder<(), ()> {
@@ -134,7 +134,7 @@ impl WindowBuilder<(), ()> {
             accept_drag_files: false,
             icon: None,
             #[cfg(feature = "raw_input")]
-            input_occurence: raw_input::InputOccurence::Foreground,
+            raw_input_window_state: raw_input::WindowState::Foreground,
         }
     }
 }
@@ -154,7 +154,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
             #[cfg(feature = "raw_input")]
-            input_occurence: self.input_occurence,
+            raw_input_window_state: self.raw_input_window_state,
         }
     }
 
@@ -177,7 +177,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
             #[cfg(feature = "raw_input")]
-            input_occurence: self.input_occurence,
+            raw_input_window_state: self.raw_input_window_state,
         }
     }
 
@@ -233,10 +233,10 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self.icon = Some(icon);
         self
     }
-    
+
     #[cfg(feature = "raw_input")]
-    pub fn input_occurence(mut self, occurence: raw_input::InputOccurence) -> WindowBuilder<Ti, S> {
-        self.input_occurence = occurence;
+    pub fn input_occurence(mut self, occurence: raw_input::WindowState) -> WindowBuilder<Ti, S> {
+        self.raw_input_window_state = occurence;
         self
     }
 }
@@ -356,7 +356,7 @@ where
                 );
             }
             #[cfg(feature = "raw_input")]
-            raw_input::register_devices(&window.handle, self.input_occurence);
+            raw_input::register_devices(&window.handle, self.raw_input_window_state);
             push_window(hwnd, window);
             handle
         }

@@ -1,3 +1,7 @@
+//! Provides raw input data.
+//!
+//! To use, specify `"raw_input"` feature.
+
 use crate::context::call_handler;
 use crate::device::*;
 use crate::last_error;
@@ -18,6 +22,7 @@ use winapi::um::handleapi::*;
 use winapi::um::winnt::*;
 use winapi::um::winuser::*;
 
+/// An input data value.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Value {
     I8(i8),
@@ -49,6 +54,7 @@ impl Value {
     }
 }
 
+/// Min and max values.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Limit {
     pub min: Value,
@@ -131,6 +137,7 @@ unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
     Some(info)
 }
 
+/// Describes any of device types.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum DeviceType {
     Keyboard,
@@ -138,6 +145,7 @@ pub enum DeviceType {
     GamePad,
 }
 
+/// A handle that represents a device.
 #[derive(Clone, Debug)]
 pub struct Device {
     handle: HANDLE,
@@ -173,12 +181,7 @@ impl PartialEq for Device {
 
 impl Eq for Device {}
 
-#[derive(Clone, Copy, Debug)]
-pub struct ValueLimit {
-    pub min: u32,
-    pub max: u32,
-}
-
+/// Keyboard information
 #[derive(Debug)]
 pub struct KeyboardInfo {
     pub function_num: u32,
@@ -186,6 +189,7 @@ pub struct KeyboardInfo {
     pub keys_total: u32,
 }
 
+/// Mouse information
 #[derive(Debug)]
 pub struct MouseInfo {
     pub button_num: u32,
@@ -193,6 +197,7 @@ pub struct MouseInfo {
     pub has_hwheel: bool,
 }
 
+/// Game pad information
 #[derive(Default, Debug)]
 pub struct GamePadInfo {
     pub button_num: u32,
@@ -205,6 +210,7 @@ pub struct GamePadInfo {
     pub hat: Option<Limit>,
 }
 
+/// Describes any of device information
 #[derive(Debug)]
 pub enum DeviceInfo {
     Keyboard(KeyboardInfo),
@@ -212,6 +218,7 @@ pub enum DeviceInfo {
     GamePad(GamePadInfo),
 }
 
+/// Return information of the device.
 pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
     unsafe {
         let info = get_raw_input_device_info(device.handle)?;
@@ -394,25 +401,28 @@ unsafe fn register_gamepad_context(device: &Device) {
     });
 }
 
+/// Describes a window state that receives the input.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum InputOccurence {
+pub enum WindowState {
+    /// Receive the input when a window is only the foreground.
     Foreground,
+    /// Receive the input when a window is the foreground and the background.
     Background,
 }
 
-impl From<WPARAM> for InputOccurence {
-    fn from(src: WPARAM) -> InputOccurence {
+impl From<WPARAM> for WindowState {
+    fn from(src: WPARAM) -> WindowState {
         match src {
-            RIM_INPUT => InputOccurence::Foreground,
-            RIM_INPUTSINK => InputOccurence::Background,
+            RIM_INPUT => WindowState::Foreground,
+            RIM_INPUTSINK => WindowState::Background,
             _ => unreachable!(),
         }
     }
 }
 
-pub(crate) fn register_devices(wnd: &Window, occurence: InputOccurence) {
+pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
     let flags = RIDEV_DEVNOTIFY
-        | if occurence == InputOccurence::Background {
+        | if state == WindowState::Background {
             RIDEV_INPUTSINK
         } else {
             0
@@ -487,6 +497,7 @@ unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
     }
 }
 
+/// Return devices.
 pub fn get_device_list() -> Vec<Device> {
     unsafe {
         let mut len = 0;
@@ -522,6 +533,7 @@ pub fn get_device_list() -> Vec<Device> {
     }
 }
 
+/// A mouse position.
 #[derive(Clone, Copy, Debug)]
 pub enum MousePosition {
     Relative { x: i32, y: i32 },
@@ -532,6 +544,7 @@ impl MousePosition {
     pub const ABSOLUTE_MAX: i32 = 65535;
 }
 
+/// Mouse button states.
 #[derive(Clone, Copy, Debug)]
 pub struct MouseButtonStates(u16);
 
@@ -558,6 +571,7 @@ impl MouseButtonStates {
     }
 }
 
+/// Keyboard data.
 #[derive(Debug)]
 pub struct KeyboardData {
     pub device: Device,
@@ -566,6 +580,7 @@ pub struct KeyboardData {
     pub extra: u32,
 }
 
+/// Mouse data.
 #[derive(Debug)]
 pub struct MouseData {
     pub device: Device,
@@ -576,6 +591,7 @@ pub struct MouseData {
     pub extra: u32,
 }
 
+/// Game pad data.
 #[derive(Debug)]
 pub struct GamePadData {
     pub device: Device,
@@ -595,6 +611,7 @@ impl GamePadData {
     }
 }
 
+/// Describes any of device data.
 #[derive(Debug)]
 pub enum InputData {
     Keyboard(KeyboardData),
@@ -813,6 +830,7 @@ where
     DefWindowProcW(hwnd, WM_INPUT, wparam, lparam)
 }
 
+/// Describes that a device state has been changed.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum DeviceChangeState {
     Arrival,

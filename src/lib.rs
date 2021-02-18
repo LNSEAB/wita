@@ -74,7 +74,7 @@ mod geometry;
 pub mod ime;
 mod monitor;
 mod procedure;
-#[cfg(feature = "raw_input")]
+#[cfg(any(feature = "raw_input", doc))]
 pub mod raw_input;
 mod resource;
 mod window;
@@ -93,7 +93,8 @@ use context::*;
 use std::ptr::null_mut;
 use winapi::um::winuser::*;
 
-pub const DEFAULT_DPI: i32 = 96;
+/// The value is an unit in logical coordinates.
+pub const DEFAULT_DPI: i32 = 9;
 
 /// Initialize `wita`.
 pub fn initialize<T: EventHandler + 'static>() {

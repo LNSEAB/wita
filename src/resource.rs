@@ -3,8 +3,12 @@ use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
 use winapi::um::winuser::*;
 
+/// Describes a icon.
+#[derive(Clone, Debug)]
 pub enum Icon {
+    /// A icon from a resource id.
     Resource(u16),
+    /// A icon from a file.
     File(PathBuf),
 }
 
