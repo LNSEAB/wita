@@ -1,5 +1,8 @@
 # wita
 
+[![wita at crates.io](https://img.shields.io/crates/v/wita.svg)](https://crates.io/crates/wita)
+[![wita at docs.rs](https://docs.rs/wita/badge.svg)](https://docs.rs/wita)
+
 A window library in Rust for Windows
 
 ## Hello, world!
