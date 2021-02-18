@@ -115,6 +115,8 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     children: Vec<Window>,
     accept_drag_files: bool,
     icon: Option<Icon>,
+    #[cfg(feature = "raw_input")]
+    input_occurence: raw_input::InputOccurence,
 }
 
 impl WindowBuilder<(), ()> {
@@ -131,6 +133,8 @@ impl WindowBuilder<(), ()> {
             children: Vec::new(),
             accept_drag_files: false,
             icon: None,
+            #[cfg(feature = "raw_input")]
+            input_occurence: raw_input::InputOccurence::Foreground,
         }
     }
 }
@@ -149,6 +153,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            #[cfg(feature = "raw_input")]
+            input_occurence: self.input_occurence,
         }
     }
 
@@ -170,6 +176,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            #[cfg(feature = "raw_input")]
+            input_occurence: self.input_occurence,
         }
     }
 
@@ -223,6 +231,12 @@ impl<Ti, S> WindowBuilder<Ti, S> {
 
     pub fn icon(mut self, icon: Icon) -> WindowBuilder<Ti, S> {
         self.icon = Some(icon);
+        self
+    }
+    
+    #[cfg(feature = "raw_input")]
+    pub fn input_occurence(mut self, occurence: raw_input::InputOccurence) -> WindowBuilder<Ti, S> {
+        self.input_occurence = occurence;
         self
     }
 }
@@ -342,7 +356,7 @@ where
                 );
             }
             #[cfg(feature = "raw_input")]
-            raw_input::register_devices(&window.handle, raw_input::InputOccurence::Foreground);
+            raw_input::register_devices(&window.handle, self.input_occurence);
             push_window(hwnd, window);
             handle
         }
