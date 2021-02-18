@@ -235,8 +235,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
     }
 
     #[cfg(feature = "raw_input")]
-    pub fn input_occurence(mut self, occurence: raw_input::WindowState) -> WindowBuilder<Ti, S> {
-        self.raw_input_window_state = occurence;
+    pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
+        self.raw_input_window_state = state;
         self
     }
 }
