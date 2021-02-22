@@ -83,12 +83,12 @@ pub mod error;
 
 pub use context::RunType;
 pub use device::*;
+pub use error::ApiError;
 pub use event::*;
 pub use geometry::*;
 pub use monitor::*;
 pub use resource::*;
 pub use window::*;
-pub use error::ApiError;
 
 use context::*;
 use std::ptr::null_mut;

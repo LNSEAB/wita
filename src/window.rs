@@ -4,11 +4,11 @@ use crate::DEFAULT_DPI;
 use crate::{
     api::*,
     context::*,
+    error::*,
     event::EventHandler,
     geometry::*,
     procedure::{window_proc, UserMessage},
     resource::*,
-    error::*,
 };
 use raw_window_handle::{windows::WindowsHandle, HasRawWindowHandle, RawWindowHandle};
 use std::cell::RefCell;

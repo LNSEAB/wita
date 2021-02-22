@@ -20,8 +20,15 @@ fn format_message(code: u32) -> Option<String> {
     unsafe {
         let mut p = null_mut() as *mut u16;
         let len = FormatMessageW(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-            null(), code, 0, std::mem::transmute(&mut p), 0, null_mut()
+            FORMAT_MESSAGE_ALLOCATE_BUFFER
+                | FORMAT_MESSAGE_FROM_SYSTEM
+                | FORMAT_MESSAGE_IGNORE_INSERTS,
+            null(),
+            code,
+            0,
+            std::mem::transmute(&mut p),
+            0,
+            null_mut(),
         );
         if len == 0 {
             return None;
@@ -38,11 +45,9 @@ pub struct ApiError(u32);
 
 impl ApiError {
     pub fn new() -> Self {
-        unsafe {
-            Self(GetLastError())
-        }
+        unsafe { Self(GetLastError()) }
     }
-    
+
     pub fn code(&self) -> u32 {
         self.0
     }

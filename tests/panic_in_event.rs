@@ -2,8 +2,7 @@ struct Application;
 
 impl Application {
     fn new() -> anyhow::Result<Self> {
-        wita::WindowBuilder::new()
-            .build()?;
+        wita::WindowBuilder::new().build()?;
         Ok(Self)
     }
 }
