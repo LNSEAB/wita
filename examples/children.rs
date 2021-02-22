@@ -1,3 +1,5 @@
+#![allow(clippy::eq_op)]
+
 struct Application;
 
 impl wita::EventHandler for Application {

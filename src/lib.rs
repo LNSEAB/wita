@@ -1,3 +1,5 @@
+#![allow(clippy::needless_doctest_main)]
+
 //! A window library in Rust for Windows.
 //!
 //! `wita` is a library that create a window and run an event loop.

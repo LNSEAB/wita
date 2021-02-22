@@ -82,7 +82,7 @@ impl Serialize for VirtualKey {
             Self::NumPad(n) => serializer.serialize_str(&format!("numpad{}", n)),
             Self::F(n) => serializer.serialize_str(&format!("f{}", n)),
             Self::Other(n) => serializer.serialize_str(&format!("other{}", n)),
-            k @ _ => serializer.serialize_str(&format!("{:?}", k).to_ascii_lowercase()),
+            k => serializer.serialize_str(&format!("{:?}", k).to_ascii_lowercase()),
         }
     }
 }
@@ -150,7 +150,7 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
             )),
-            _ if v.starts_with("f") => Ok(VirtualKey::F(
+            _ if v.starts_with('f') => Ok(VirtualKey::F(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
@@ -235,7 +235,7 @@ pub(crate) fn as_virtual_key(k: i32) -> VirtualKey {
         VK_LMENU => VirtualKey::LAlt,
         VK_RMENU => VirtualKey::RAlt,
         v @ VK_F1..=VK_F24 => VirtualKey::F((v - VK_F1 + 1) as u8),
-        v @ _ => VirtualKey::Other(v as u32),
+        v => VirtualKey::Other(v as u32),
     }
 }
 

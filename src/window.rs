@@ -120,6 +120,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
 }
 
 impl WindowBuilder<(), ()> {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> WindowBuilder<&'static str, LogicalSize<u32>> {
         WindowBuilder {
             title: "",
@@ -293,7 +294,7 @@ where
             .chain(Some(0))
             .collect::<Vec<_>>();
         unsafe {
-            let dpi = get_dpi_from_point(self.position.clone());
+            let dpi = get_dpi_from_point(self.position);
             let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, WS_OVERLAPPEDWINDOW, 0, dpi);
             let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
@@ -543,7 +544,7 @@ impl Window {
     }
 
     pub fn raw_handle(&self) -> *mut std::ffi::c_void {
-        self.hwnd.0.clone() as _
+        self.hwnd.0 as _
     }
 }
 
@@ -559,7 +560,7 @@ unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         RawWindowHandle::Windows(WindowsHandle {
             hinstance: unsafe { GetWindowLongPtrW(self.hwnd.0, GWLP_HINSTANCE) as _ },
-            hwnd: self.hwnd.0.clone() as _,
+            hwnd: self.hwnd.0 as _,
             ..WindowsHandle::empty()
         })
     }

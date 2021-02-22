@@ -217,7 +217,9 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
             WM_KEYUP => key_input::<T>(handle, KeyState::Released, wparam, lparam),
             WM_CHAR => {
                 call_handler(|eh: &mut T, _| {
-                    std::char::from_u32(wparam as u32).map(|c| eh.char_input(handle, c));
+                    if let Some(c) = std::char::from_u32(wparam as u32) {
+                        eh.char_input(handle, c);
+                    }
                 });
                 0
             }

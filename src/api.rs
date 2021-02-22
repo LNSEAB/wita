@@ -2,7 +2,7 @@ mod imm;
 
 use crate::geometry::*;
 use std::sync::Once;
-use winapi::shared::{minwindef::*, windef::*, winerror::S_OK};
+use winapi::shared::{minwindef::*, windef::*};
 use winapi::um::{imm::*, shellscalingapi::*, winnt::*, winuser::*};
 
 pub use imm::*;
@@ -43,13 +43,10 @@ pub fn enable_dpi_awareness() {
     static ENABLE_DPI_AWARENESS: Once = Once::new();
     unsafe {
         ENABLE_DPI_AWARENESS.call_once(|| {
-            if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) == TRUE {
-                return;
-            } else if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) == TRUE
+            if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) != TRUE
+                && SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) != TRUE
             {
-                return;
-            } else if SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) == S_OK {
-                return;
+                SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
             }
         });
     }

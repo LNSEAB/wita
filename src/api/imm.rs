@@ -167,7 +167,7 @@ impl Imc {
             buf.set_len(len);
             ImmGetCompositionStringW(himc, index, buf.as_mut_ptr() as *mut _, byte_len as DWORD);
             let s = String::from_utf16_lossy(&buf);
-            if s == "" {
+            if s.is_empty() {
                 None
             } else {
                 Some(s)
@@ -205,12 +205,10 @@ impl Imc {
 
         unsafe {
             match index {
-                GCS_COMPSTR => {
-                    get_string(self.himc, GCS_COMPSTR).map(|s| CompositionString::CompStr(s))
-                }
-                GCS_COMPATTR => get_attrs(self.himc).map(|v| CompositionString::CompAttr(v)),
+                GCS_COMPSTR => get_string(self.himc, GCS_COMPSTR).map(CompositionString::CompStr),
+                GCS_COMPATTR => get_attrs(self.himc).map(CompositionString::CompAttr),
                 GCS_RESULTSTR => {
-                    get_string(self.himc, GCS_RESULTSTR).map(|s| CompositionString::ResultStr(s))
+                    get_string(self.himc, GCS_RESULTSTR).map(CompositionString::ResultStr)
                 }
                 _ => None,
             }

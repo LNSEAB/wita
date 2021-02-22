@@ -43,16 +43,17 @@ impl Composition {
         self.chars.len()
     }
 
-    pub fn into_iter(self) -> impl IntoIterator {
-        self.chars.into_iter()
-    }
-
-    pub fn iter<'a>(&'a self) -> impl Iterator + 'a {
+    pub fn iter(&self) -> impl Iterator + '_ {
         self.chars.iter()
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.chars.iter().map(|elem| elem.ch).collect::<String>()
+impl std::iter::IntoIterator for Composition {
+    type Item = CompositionChar;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.chars.into_iter()
     }
 }
 
@@ -75,11 +76,15 @@ impl CandidateList {
         Self { list, selection }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.list.is_empty()
+    }
+
     pub fn len(&self) -> usize {
         self.list.len()
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator + 'a {
+    pub fn iter(&self) -> impl Iterator + '_ {
         self.list.iter()
     }
 

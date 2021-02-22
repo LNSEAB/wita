@@ -35,10 +35,7 @@ pub enum Value {
 
 impl Value {
     pub fn signed(&self) -> bool {
-        match self {
-            Self::I8(_) | Self::I16(_) | Self::I32(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::I8(_) | Self::I16(_) | Self::I32(_))
     }
 
     pub fn unsigned(&self) -> bool {
@@ -94,7 +91,7 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     Some(v)
 }
 
-unsafe fn get_device_name(interface: &Vec<u16>) -> Option<String> {
+unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
     let handle = CreateFileW(
         interface.as_ptr(),
         0,
@@ -104,7 +101,7 @@ unsafe fn get_device_name(interface: &Vec<u16>) -> Option<String> {
         0,
         null_mut(),
     );
-    if handle == null_mut() {
+    if handle.is_null() {
         last_error!("CreateFileW");
         return None;
     }
@@ -155,15 +152,15 @@ pub struct Device {
 
 impl Device {
     pub fn name(&self) -> Option<&str> {
-        self.name.as_ref().map(|n| n.as_str())
+        self.name.as_deref()
     }
 
     pub fn device_type(&self) -> DeviceType {
-        self.ty.clone()
+        self.ty
     }
 
     pub fn raw_handle(&self) -> HANDLE {
-        self.handle.clone()
+        self.handle
     }
 }
 
@@ -282,8 +279,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     button_num,
                     ..Default::default()
                 };
-                for i in 0..caps.NumberInputValueCaps as usize {
-                    let caps = &value_caps[i];
+                for caps in &value_caps {
                     let usage = if caps.IsRange == 0 {
                         caps.u.NotRange().Usage
                     } else {
@@ -291,15 +287,15 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     };
                     let limit = if caps.LogicalMin > caps.LogicalMax {
                         match caps.BitSize {
-                            b @ _ if b <= 8 => Limit {
+                            b if b <= 8 => Limit {
                                 min: Value::U8(caps.LogicalMin as u8),
                                 max: Value::U8(caps.LogicalMax as u8),
                             },
-                            b @ _ if b <= 16 => Limit {
+                            b if b <= 16 => Limit {
                                 min: Value::U16(caps.LogicalMin as u16),
                                 max: Value::U16(caps.LogicalMax as u16),
                             },
-                            b @ _ if b <= 32 => Limit {
+                            b if b <= 32 => Limit {
                                 min: Value::U32(caps.LogicalMin as u32),
                                 max: Value::U32(caps.LogicalMax as u32),
                             },
@@ -307,15 +303,15 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                         }
                     } else {
                         match caps.BitSize {
-                            b @ _ if b <= 8 => Limit {
+                            b if b <= 8 => Limit {
                                 min: Value::I8(caps.LogicalMin as i8),
                                 max: Value::I8(caps.LogicalMax as i8),
                             },
-                            b @ _ if b <= 16 => Limit {
+                            b if b <= 16 => Limit {
                                 min: Value::I16(caps.LogicalMin as i16),
                                 max: Value::I16(caps.LogicalMax as i16),
                             },
-                            b @ _ if b <= 32 => Limit {
+                            b if b <= 32 => Limit {
                                 min: Value::I32(caps.LogicalMin as i32),
                                 max: Value::I32(caps.LogicalMax as i32),
                             },
@@ -343,7 +339,6 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
 struct GamePadContext {
     device: Device,
     preparsed: Vec<u8>,
-    caps: HIDP_CAPS,
     button_caps: Vec<HIDP_BUTTON_CAPS>,
     value_caps: Vec<HIDP_VALUE_CAPS>,
     usage: Vec<USAGE>,
@@ -392,7 +387,6 @@ unsafe fn register_gamepad_context(device: &Device) {
         ctxs.push(GamePadContext {
             device: device.clone(),
             preparsed,
-            caps,
             button_caps,
             value_caps,
             usage: vec![USAGE::default(); usage_num],
@@ -714,7 +708,6 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
                 buttons[(ctx.usage[i] - ctx.button_caps[0].u.Range().UsageMin) as usize] = true;
             }
         }
-        let value_caps = &ctx.value_caps;
         let mut x = 0;
         let mut y = 0;
         let mut z = 0;
@@ -722,16 +715,16 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let mut ry = 0;
         let mut rz = 0;
         let mut hat = 0;
-        for i in 0..ctx.caps.NumberInputValueCaps as usize {
+        for caps in &ctx.value_caps {
             let mut value = 0;
-            let usage = if value_caps[i].IsRange != 0 {
-                value_caps[i].u.Range().UsageMin
+            let usage = if caps.IsRange != 0 {
+                caps.u.Range().UsageMin
             } else {
-                value_caps[i].u.NotRange().Usage
+                caps.u.NotRange().Usage
             };
             let ret = HidP_GetUsageValue(
                 HidP_Input,
-                value_caps[i].UsagePage,
+                caps.UsagePage,
                 0,
                 usage,
                 &mut value,
@@ -857,7 +850,7 @@ where
             let device = Device {
                 handle,
                 ty: ty.unwrap(),
-                name: name,
+                name,
             };
             if device.ty == DeviceType::GamePad {
                 register_gamepad_context(&device);

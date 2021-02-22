@@ -25,8 +25,10 @@ unsafe extern "system" fn get_monitors_proc(
 ) -> BOOL {
     let v = &mut *(lparam as *mut Vec<Monitor>);
     let rc = &*rc;
-    let mut info = MONITORINFO::default();
-    info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+    let mut info = MONITORINFO {
+        cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+        ..Default::default()
+    };
     GetMonitorInfoW(hmonitor, &mut info);
     v.push(Monitor {
         hmonitor,
@@ -65,8 +67,10 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
         if hmonitor == std::ptr::null_mut() {
             return None;
         }
-        let mut info = MONITORINFO::default();
-        info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
         GetMonitorInfoW(hmonitor, &mut info);
         Some(Monitor {
             hmonitor,

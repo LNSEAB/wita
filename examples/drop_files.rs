@@ -33,15 +33,13 @@ impl wita::EventHandler for Application {
         state: wita::KeyState,
         _: bool,
     ) {
-        if state == wita::KeyState::Pressed {
-            if code.vkey == wita::VirtualKey::Char('T') {
-                self.accept_drag_files = !self.accept_drag_files;
-                window.accept_drag_files(self.accept_drag_files);
-                if self.accept_drag_files {
-                    println!("enabled accept_drag_files");
-                } else {
-                    println!("disabled accept_drag_files");
-                }
+        if state == wita::KeyState::Pressed && code.vkey == wita::VirtualKey::Char('T') {
+            self.accept_drag_files = !self.accept_drag_files;
+            window.accept_drag_files(self.accept_drag_files);
+            if self.accept_drag_files {
+                println!("enabled accept_drag_files");
+            } else {
+                println!("disabled accept_drag_files");
             }
         }
     }
