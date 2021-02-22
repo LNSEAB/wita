@@ -56,6 +56,11 @@ pub fn create_context() {
 }
 
 #[inline]
+pub fn is_context_null() -> bool {
+    CONTEXT.with(|ctx| ctx.borrow().is_null())
+}
+
+#[inline]
 pub(crate) fn push_window(hwnd: HWND, wnd: LocalWindow) {
     let p = CONTEXT.with(|ctx| *ctx.borrow());
     unsafe {

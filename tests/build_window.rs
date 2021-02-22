@@ -3,15 +3,18 @@ struct Application;
 impl Application {
     fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
-            .title("wita icon")
-            .icon(wita::Icon::from_path("examples/icon.ico"))
             .build()?;
         Ok(Self)
     }
 }
 
-impl wita::EventHandler for Application {}
+impl wita::EventHandler for Application {
+    fn activated(&mut self, wnd: &wita::Window) {
+        wnd.close();
+    }
+}
 
-fn main() {
+#[test]
+pub fn build_window() {
     wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

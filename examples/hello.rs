@@ -1,9 +1,9 @@
 struct Application;
 
 impl Application {
-    fn new() -> Self {
-        wita::WindowBuilder::new().title("hello, world!").build();
-        Self
+    fn new() -> Result<Self, wita::ApiError> {
+        wita::WindowBuilder::new().title("hello, world!").build()?;
+        Ok(Self)
     }
 }
 
@@ -14,6 +14,5 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

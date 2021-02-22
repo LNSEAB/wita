@@ -1,3 +1,7 @@
+use std::ptr::{null, null_mut};
+use winapi::um::errhandlingapi::*;
+use winapi::um::winbase::*;
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! last_error {
@@ -11,3 +15,43 @@ macro_rules! last_error {
         )
     };
 }
+
+fn format_message(code: u32) -> Option<String> {
+    unsafe {
+        let mut p = null_mut() as *mut u16;
+        let len = FormatMessageW(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+            null(), code, 0, std::mem::transmute(&mut p), 0, null_mut()
+        );
+        if len == 0 {
+            return None;
+        }
+        let buffer = std::slice::from_raw_parts(p, len as usize);
+        let ret = String::from_utf16_lossy(buffer);
+        LocalFree(p as _);
+        Some(ret)
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct ApiError(u32);
+
+impl ApiError {
+    pub fn new() -> Self {
+        unsafe {
+            Self(GetLastError())
+        }
+    }
+    
+    pub fn code(&self) -> u32 {
+        self.0
+    }
+}
+
+impl std::fmt::Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", format_message(self.0).unwrap_or_default())
+    }
+}
+
+impl std::error::Error for ApiError {}

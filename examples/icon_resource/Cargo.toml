@@ -9,3 +9,6 @@ wita = { path = "../.." }
 
 [build-dependencies]
 embed-resource = "1.4.1"
+
+[dev-dependencies]
+anyhow = "1.0.38"

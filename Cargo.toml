@@ -34,9 +34,13 @@ winapi = { version = "0.3.9", features = [
 	"errhandlingapi",
 	"fileapi",
 	"handleapi",
+	"winbase",
 	"impl-default",
 ] }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 num = "0.3.1"
 raw-window-handle = "0.3.3"
 log = "0.4.14"
+
+[dev-dependencies]
+anyhow = "1.0.38"

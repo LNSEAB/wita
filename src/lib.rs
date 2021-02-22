@@ -11,11 +11,11 @@
 //! struct Application;
 //!
 //! impl Application {
-//!     fn new() -> Self {
+//!     fn new() -> Result<Self, wita::ApiError> {
 //!         wita::WindowBuilder::new()
 //!             .title("hello, world!")
-//!             .build();
-//!         Self
+//!             .build()?;
+//!         Ok(Self)
 //!     }
 //! }
 //!
@@ -26,8 +26,7 @@
 //! }
 //!
 //! fn main() {
-//!     wita::initialize::<Application>();
-//!     wita::run(wita::RunType::Wait, Application);
+//!     wita::run(wita::RunType::Wait, Application::new).unwrap();
 //! }
 //! ```
 //!
@@ -39,9 +38,9 @@
 //! struct Foo {}
 //!
 //! impl Foo {
-//!     fn new() -> Self {
-//!         //
-//!         Self {}
+//!     fn new() -> Result<Self, wita::ApiError> {
+//!         wita::WindowBuilder::new().build()?;
+//!         Ok(Self {})
 //!     }
 //! }
 //!
@@ -56,8 +55,7 @@
 //! Next, pass the your defined object to [`run`].
 //!
 //! ```ignore
-//! wita::initialize::<Foo>();
-//! wita::run(wita::RunType::Wait, Foo::new());
+//! wita::run(wita::RunType::Wait, Foo::new).unwrap();
 //! ```
 //!
 //! # Drawing on the window
@@ -81,7 +79,7 @@ pub mod raw_input;
 mod resource;
 mod window;
 #[macro_use]
-mod error;
+pub mod error;
 
 pub use context::RunType;
 pub use device::*;
@@ -90,6 +88,7 @@ pub use geometry::*;
 pub use monitor::*;
 pub use resource::*;
 pub use window::*;
+pub use error::ApiError;
 
 use context::*;
 use std::ptr::null_mut;
@@ -98,17 +97,21 @@ use winapi::um::winuser::*;
 /// The value is an unit in logical coordinates.
 pub const DEFAULT_DPI: i32 = 96;
 
-/// Initialize `wita`.
-pub fn initialize<T: EventHandler + 'static>() {
-    api::enable_dpi_awareness();
-    window::register_class::<T>();
-    api::enable_gui_thread();
-    context::create_context();
-}
-
 /// Run the event loop.
-pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
-    set_event_handler(handler);
+pub fn run<F, T, E>(run_type: RunType, f: F) -> Result<(), E>
+where
+    F: FnOnce() -> Result<T, E>,
+    T: EventHandler + 'static,
+{
+    api::enable_dpi_awareness();
+    api::enable_gui_thread();
+    window::register_class::<T>();
+    context::create_context();
+    let handler = f();
+    match handler {
+        Ok(handler) => set_event_handler(handler),
+        Err(e) => return Err(e),
+    }
     let mut msg = MSG::default();
     match run_type {
         RunType::Idle => unsafe {
@@ -137,4 +140,5 @@ pub fn run<T: EventHandler + 'static>(run_type: RunType, handler: T) {
         },
     }
     destroy_context();
+    Ok(())
 }

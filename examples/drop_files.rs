@@ -5,14 +5,14 @@ struct Application {
 }
 
 impl Application {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
             .title("wita drop files")
             .accept_drag_files(true)
-            .build();
-        Self {
+            .build()?;
+        Ok(Self {
             accept_drag_files: true,
-        }
+        })
     }
 }
 
@@ -46,6 +46,5 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

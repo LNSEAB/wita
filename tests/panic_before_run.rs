@@ -2,16 +2,16 @@ struct Application;
 
 impl Application {
     fn new() -> anyhow::Result<Self> {
-        wita::WindowBuilder::new()
-            .title("wita icon")
-            .icon(wita::Icon::from_path("examples/icon.ico"))
-            .build()?;
+        wita::WindowBuilder::new().build()?;
         Ok(Self)
     }
 }
 
 impl wita::EventHandler for Application {}
 
-fn main() {
+#[test]
+#[should_panic]
+pub fn before_run() {
+    wita::WindowBuilder::new().build().unwrap();
     wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

@@ -1,13 +1,13 @@
 struct Application;
 
 impl Application {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         let monitor = wita::monitor_from_point(wita::ScreenPosition::new(0, 0)).unwrap();
         wita::WindowBuilder::new()
             .inner_size(monitor.size)
             .style(wita::WindowStyle::borderless())
-            .build();
-        Self
+            .build()?;
+        Ok(Self)
     }
 }
 
@@ -28,6 +28,5 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

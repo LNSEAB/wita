@@ -1,11 +1,11 @@
 struct Application;
 
 impl Application {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
             .style(wita::WindowStyle::borderless())
-            .build();
-        Self
+            .build()?;
+        Ok(Self)
     }
 }
 
@@ -34,6 +34,5 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

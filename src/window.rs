@@ -8,6 +8,7 @@ use crate::{
     geometry::*,
     procedure::{window_proc, UserMessage},
     resource::*,
+    error::*,
 };
 use raw_window_handle::{windows::WindowsHandle, HasRawWindowHandle, RawWindowHandle};
 use std::cell::RefCell;
@@ -285,7 +286,10 @@ where
     Ti: AsRef<str>,
     S: ToPhysicalSize<u32>,
 {
-    pub fn build(self) -> Window {
+    pub fn build(self) -> Result<Window, ApiError> {
+        if is_context_null() {
+            panic!("The window can be created after run");
+        }
         let class_name = window_class_name();
         let title = self
             .title
@@ -313,7 +317,7 @@ where
                 std::ptr::null_mut(),
             );
             if hwnd == std::ptr::null_mut() {
-                panic!("cannot create the window");
+                return Err(ApiError::new());
             }
             let window = LocalWindow::new(
                 hwnd,
@@ -359,7 +363,7 @@ where
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);
             push_window(hwnd, window);
-            handle
+            Ok(handle)
         }
     }
 }

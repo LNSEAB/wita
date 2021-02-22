@@ -1,18 +1,17 @@
 struct Application;
 
 impl Application {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
             .title("wita icon_resource")
             .icon(wita::Icon::Resource(111))
-            .build();
-        Self
+            .build()?;
+        Ok(Self)
     }
 }
 
 impl wita::EventHandler for Application {}
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

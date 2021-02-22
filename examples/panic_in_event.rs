@@ -1,9 +1,9 @@
 struct Application;
 
 impl Application {
-    fn new() -> Self {
-        wita::WindowBuilder::new().title("wita panic").build();
-        Self
+    fn new() -> anyhow::Result<Self> {
+        wita::WindowBuilder::new().title("wita panic").build()?;
+        Ok(Self)
     }
 }
 
@@ -20,6 +20,5 @@ impl Drop for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }

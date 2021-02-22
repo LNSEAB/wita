@@ -3,7 +3,7 @@ struct Application {
 }
 
 impl Application {
-    fn new() -> Self {
+    fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
             .title("wita count")
             .inner_size(wita::LogicalSize::new(256, 256))
@@ -13,8 +13,8 @@ impl Application {
                     .has_minimize_box(false)
                     .has_maximize_box(false),
             )
-            .build();
-        Self { count: 0 }
+            .build()?;
+        Ok(Self { count: 0 })
     }
 }
 
@@ -34,6 +34,5 @@ impl wita::EventHandler for Application {
 }
 
 fn main() {
-    wita::initialize::<Application>();
-    wita::run(wita::RunType::Wait, Application::new());
+    wita::run(wita::RunType::Wait, Application::new).unwrap();
 }
