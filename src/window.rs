@@ -160,8 +160,8 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         }
     }
 
-    pub fn position(mut self, position: ScreenPosition) -> Self {
-        self.position = position;
+    pub fn position(mut self, position: impl Into<ScreenPosition>) -> Self {
+        self.position = position.into();
         self
     }
 

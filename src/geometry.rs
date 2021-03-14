@@ -157,6 +157,12 @@ impl ScreenPosition {
     }
 }
 
+impl From<(i32, i32)> for ScreenPosition {
+    fn from(src: (i32, i32)) -> ScreenPosition {
+        ScreenPosition::new(src.0, src.1)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

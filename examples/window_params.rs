@@ -4,6 +4,7 @@ impl Application {
     fn new() -> anyhow::Result<Self> {
         wita::WindowBuilder::new()
             .title("wita window params")
+            .position((100, 100))
             .build()?;
         Ok(Self)
     }
