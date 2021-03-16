@@ -5,6 +5,8 @@ use winapi::Interface;
 use com_ptr::*;
 
 struct Application {
+    root_wnd: wita::Window,
+    d2d1_wnd: wita::Window,
     render_target: ComPtr<ID2D1HwndRenderTarget>,
 }
 
@@ -13,10 +15,10 @@ impl Application {
         let root_wnd = wita::WindowBuilder::new()
             .title("wita inner window")
             .build()?;
-        let d2d1_wnd = wita::WindowBuilder::new()
-            .inner_window(&root_wnd)
-            .position((10, 10))
-            .inner_size(wita::LogicalSize::new(320, 240))
+        let d2d1_wnd = wita::InnerWindowBuilder::new()
+            .parent(&root_wnd)
+            .position(wita::LogicalPosition::new(10, 10))
+            .size(wita::LogicalSize::new(320, 240))
             .build()?;
         let d2d1_factory = ComPtr::new(|| unsafe {
             let mut p = std::ptr::null_mut();
@@ -51,12 +53,24 @@ impl Application {
             hresult(p, ret)
         })?;
         Ok(Self {
-            render_target
+            render_target,
+            root_wnd,
+            d2d1_wnd,
         })
     }
 }
 
 impl wita::EventHandler for Application {
+    fn mouse_input(&mut self, wnd: &wita::Window, btn: wita::MouseButton, state: wita::KeyState, _: wita::MouseState) {
+        if btn == wita::MouseButton::Left && state == wita::KeyState::Pressed {
+            if wnd == &self.root_wnd {
+                println!("root_wnd");
+            } else if wnd == &self.d2d1_wnd {
+                println!("d2d1_wnd");
+            }
+        }
+    }
+    
     fn draw(&mut self, _: &wita::Window) {
         unsafe {
             self.render_target.BeginDraw();

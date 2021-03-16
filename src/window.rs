@@ -103,6 +103,44 @@ impl Style for WindowStyle {
     }
 }
 
+fn window_class_name() -> &'static Vec<u16> {
+    static mut WINDOW_CLASS_NAME: Vec<u16> = Vec::new();
+    static REGISTER: Once = Once::new();
+    unsafe {
+        REGISTER.call_once(|| {
+            let class_name = "wita_window_class"
+                .encode_utf16()
+                .chain(Some(0))
+                .collect::<Vec<_>>();
+            WINDOW_CLASS_NAME = class_name;
+        });
+        &WINDOW_CLASS_NAME
+    }
+}
+
+pub(crate) fn register_class<T: EventHandler + 'static>() {
+    unsafe {
+        let class_name = window_class_name();
+        let wc = WNDCLASSEXW {
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
+            style: CS_VREDRAW | CS_HREDRAW,
+            lpfnWndProc: Some(window_proc::<T>),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: GetModuleHandleW(std::ptr::null_mut()),
+            hIcon: std::ptr::null_mut(),
+            hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
+            hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
+            lpszMenuName: std::ptr::null_mut(),
+            lpszClassName: class_name.as_ptr(),
+            hIconSm: std::ptr::null_mut(),
+        };
+        if RegisterClassExW(&wc) == 0 {
+            panic!("cannot register the window class");
+        }
+    }
+}
+
 /// The object that allows you to build windows.
 pub struct WindowBuilder<Ti = (), S = ()> {
     title: Ti,
@@ -116,7 +154,6 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     children: Vec<Window>,
     accept_drag_files: bool,
     icon: Option<Icon>,
-    inner_window: Option<Window>,
     #[cfg(feature = "raw_input")]
     raw_input_window_state: raw_input::WindowState,
 }
@@ -136,7 +173,6 @@ impl WindowBuilder<(), ()> {
             children: Vec::new(),
             accept_drag_files: false,
             icon: None,
-            inner_window: None,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: raw_input::WindowState::Foreground,
         }
@@ -157,7 +193,6 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
-            inner_window: self.inner_window,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -181,7 +216,6 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
-            inner_window: self.inner_window,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -240,54 +274,10 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self
     }
     
-    pub fn inner_window(mut self, parent: &Window) -> WindowBuilder<Ti, S> {
-        self.inner_window = Some(parent.clone());
-        self.style = WS_CHILD;
-        self
-    }
-
     #[cfg(feature = "raw_input")]
     pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
         self.raw_input_window_state = state;
         self
-    }
-}
-
-fn window_class_name() -> &'static Vec<u16> {
-    static mut WINDOW_CLASS_NAME: Vec<u16> = Vec::new();
-    static REGISTER: Once = Once::new();
-    unsafe {
-        REGISTER.call_once(|| {
-            let class_name = "wita_window_class"
-                .encode_utf16()
-                .chain(Some(0))
-                .collect::<Vec<_>>();
-            WINDOW_CLASS_NAME = class_name;
-        });
-        &WINDOW_CLASS_NAME
-    }
-}
-
-pub(crate) fn register_class<T: EventHandler + 'static>() {
-    unsafe {
-        let class_name = window_class_name();
-        let wc = WNDCLASSEXW {
-            cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
-            style: CS_VREDRAW | CS_HREDRAW,
-            lpfnWndProc: Some(window_proc::<T>),
-            cbClsExtra: 0,
-            cbWndExtra: 0,
-            hInstance: GetModuleHandleW(std::ptr::null_mut()),
-            hIcon: std::ptr::null_mut(),
-            hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
-            hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
-            lpszMenuName: std::ptr::null_mut(),
-            lpszClassName: class_name.as_ptr(),
-            hIconSm: std::ptr::null_mut(),
-        };
-        if RegisterClassExW(&wc) == 0 {
-            panic!("cannot register the window class");
-        }
     }
 }
 
@@ -321,11 +311,7 @@ where
                 self.position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
-                if let Some(parent) = self.inner_window {
-                    parent.raw_handle() as HWND
-                } else {
-                    std::ptr::null_mut()
-                },
+                std::ptr::null_mut(),
                 std::ptr::null_mut(),
                 hinst,
                 std::ptr::null_mut(),
@@ -373,6 +359,168 @@ where
                     ICON_SMALL as WPARAM,
                     small as LPARAM,
                 );
+            }
+            #[cfg(feature = "raw_input")]
+            raw_input::register_devices(&window.handle, self.raw_input_window_state);
+            push_window(hwnd, window);
+            Ok(handle)
+        }
+    }
+}
+
+pub struct InnerWindowBuilder<W = (), P = (), S = ()> {
+    parent: W,
+    position: P,
+    size: S,
+    visibility: bool,
+    enabled_ime: bool,
+    visible_ime_composition_window: bool,
+    visible_ime_candidate_window: bool,
+    accept_drag_files: bool,
+    #[cfg(feature = "raw_input")]
+    raw_input_window_state: raw_input::WindowState
+}
+
+impl InnerWindowBuilder<(), (), ()> {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new() -> InnerWindowBuilder<(), LogicalPosition<f32>, ()> {
+        InnerWindowBuilder {
+            parent: (),
+            position: LogicalPosition::new(0.0, 0.0),
+            size: (),
+            visibility: true,
+            enabled_ime: false,
+            visible_ime_composition_window: true,
+            visible_ime_candidate_window: true,
+            accept_drag_files: false,
+            #[cfg(feature = "raw_input")]
+            raw_input_window_state: raw_input::WindowState::Foreground,
+        }
+    }
+}
+
+impl<W, P, S> InnerWindowBuilder<W, P, S> {
+    pub fn parent(self, parent: &Window) -> InnerWindowBuilder<Window, P, S> {
+        InnerWindowBuilder {
+            parent: parent.clone(),
+            position: self.position,
+            size: self.size,
+            visibility: self.visibility,
+            enabled_ime: self.enabled_ime,
+            visible_ime_composition_window: self.visible_ime_composition_window,
+            visible_ime_candidate_window: self.visible_ime_candidate_window,
+            accept_drag_files: self.accept_drag_files,
+            #[cfg(feature = "raw_input")]
+            raw_input_window_state: self.raw_input_window_state,
+        }
+    }
+    
+    pub fn position<T>(self, position: T) -> InnerWindowBuilder<W, T, S> {
+        InnerWindowBuilder {
+            parent: self.parent,
+            position,
+            size: self.size,
+            visibility: self.visibility,
+            enabled_ime: self.enabled_ime,
+            visible_ime_composition_window: self.visible_ime_composition_window,
+            visible_ime_candidate_window: self.visible_ime_candidate_window,
+            accept_drag_files: self.accept_drag_files,
+            #[cfg(feature = "raw_input")]
+            raw_input_window_state: self.raw_input_window_state,
+        }
+    }
+    
+    pub fn size<T>(self, size: T) -> InnerWindowBuilder<W, P, T> {
+        InnerWindowBuilder {
+            parent: self.parent,
+            position: self.position,
+            size,
+            visibility: self.visibility,
+            enabled_ime: self.enabled_ime,
+            visible_ime_composition_window: self.visible_ime_composition_window,
+            visible_ime_candidate_window: self.visible_ime_candidate_window,
+            accept_drag_files: self.accept_drag_files,
+            #[cfg(feature = "raw_input")]
+            raw_input_window_state: self.raw_input_window_state,
+        }
+    }
+    
+    pub fn visible(mut self, flag: bool) -> Self {
+        self.visibility = flag;
+        self
+    }
+    
+    pub fn ime(mut self, flag: bool) -> Self {
+        self.enabled_ime = flag;
+        self
+    }
+
+    pub fn enable_ime(mut self) -> Self {
+        self.enabled_ime = true;
+        self
+    }
+    
+    pub fn disable_ime(mut self) -> Self {
+        self.enabled_ime = false;
+        self
+    }
+    
+    pub fn accept_drag_files(mut self) -> Self {
+        self.accept_drag_files = true;
+        self
+    }
+}
+
+impl<P, S> InnerWindowBuilder<Window, P, S> 
+where
+    P: ToPhysicalPosition<i32>,
+    S: ToPhysicalSize<u32>,
+{
+    pub fn build(self) -> Result<Window, ApiError> {
+        let class_name = window_class_name();
+        unsafe {
+            let dpi = self.parent.dpi();
+            let position = self.position.to_physical(dpi as i32);
+            let size = self.size.to_physical(dpi);
+            let rc = adjust_window_rect(size, WS_CHILD, 0, dpi);
+            let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
+            let hwnd = CreateWindowExW(
+                0,
+                class_name.as_ptr(),
+                std::ptr::null_mut(),
+                WS_CHILD,
+                position.x,
+                position.y,
+                (rc.right - rc.left) as i32,
+                (rc.bottom - rc.top) as i32,
+                self.parent.raw_handle() as _,
+                std::ptr::null_mut(),
+                hinst,
+                std::ptr::null_mut(),
+            );
+            if hwnd == std::ptr::null_mut() {
+                return Err(ApiError::new());
+            }
+            let window = LocalWindow::new(
+                hwnd,
+                WindowState {
+                    title: String::new(),
+                    style: WS_CHILD,
+                    set_position: ScreenPosition::new(position.x, position.y),
+                    set_inner_size: size,
+                    visible_ime_composition_window: self.visible_ime_composition_window,
+                    visible_ime_candidate_window: self.visible_ime_candidate_window,
+                    ime_position: PhysicalPosition::new(0, 0),
+                    children: vec![],
+                    closed: false,
+                },
+            );
+            let handle = window.handle.clone();
+            if self.visibility {
+                window.handle.show();
+            }
+            if self.accept_drag_files {
+                DragAcceptFiles(hwnd, TRUE);
             }
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);
