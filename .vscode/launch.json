@@ -169,6 +169,19 @@
 			"console": "internalConsole",
 			"preLaunchTask": "build panic_in_event",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "inner_window",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/inner_window.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "internalConsole",
+			"preLaunchTask": "build inner_window",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }

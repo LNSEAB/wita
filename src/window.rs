@@ -116,6 +116,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     children: Vec<Window>,
     accept_drag_files: bool,
     icon: Option<Icon>,
+    inner_window: Option<Window>,
     #[cfg(feature = "raw_input")]
     raw_input_window_state: raw_input::WindowState,
 }
@@ -135,6 +136,7 @@ impl WindowBuilder<(), ()> {
             children: Vec::new(),
             accept_drag_files: false,
             icon: None,
+            inner_window: None,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: raw_input::WindowState::Foreground,
         }
@@ -155,6 +157,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            inner_window: self.inner_window,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -178,6 +181,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            inner_window: self.inner_window,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -235,6 +239,12 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self.icon = Some(icon);
         self
     }
+    
+    pub fn inner_window(mut self, parent: &Window) -> WindowBuilder<Ti, S> {
+        self.inner_window = Some(parent.clone());
+        self.style = WS_CHILD;
+        self
+    }
 
     #[cfg(feature = "raw_input")]
     pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
@@ -248,7 +258,7 @@ fn window_class_name() -> &'static Vec<u16> {
     static REGISTER: Once = Once::new();
     unsafe {
         REGISTER.call_once(|| {
-            let class_name = "curun_window_class"
+            let class_name = "wita_window_class"
                 .encode_utf16()
                 .chain(Some(0))
                 .collect::<Vec<_>>();
@@ -300,7 +310,7 @@ where
         unsafe {
             let dpi = get_dpi_from_point(self.position);
             let inner_size = self.inner_size.to_physical(dpi);
-            let rc = adjust_window_rect(inner_size, WS_OVERLAPPEDWINDOW, 0, dpi);
+            let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
             let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
             let hwnd = CreateWindowExW(
                 0,
@@ -311,7 +321,11 @@ where
                 self.position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
-                std::ptr::null_mut(),
+                if let Some(parent) = self.inner_window {
+                    parent.raw_handle() as HWND
+                } else {
+                    std::ptr::null_mut()
+                },
                 std::ptr::null_mut(),
                 hinst,
                 std::ptr::null_mut(),
