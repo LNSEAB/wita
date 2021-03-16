@@ -141,7 +141,7 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
     }
 }
 
-/// The object that allows you to build windows.
+/// The object to build a window.
 pub struct WindowBuilder<Ti = (), S = ()> {
     title: Ti,
     position: ScreenPosition,
@@ -368,6 +368,7 @@ where
     }
 }
 
+/// The object to build a window into the parent window.
 pub struct InnerWindowBuilder<W = (), P = (), S = ()> {
     parent: W,
     position: P,
@@ -542,7 +543,6 @@ pub(crate) struct WindowState {
     pub closed: bool,
 }
 
-/// Represents a window.
 #[derive(Clone)]
 pub(crate) struct LocalWindow {
     pub handle: Window,
@@ -561,7 +561,7 @@ impl LocalWindow {
     }
 }
 
-/// The object is like Window, can send to other threads.
+/// Represents a window.
 #[derive(Clone)]
 pub struct Window {
     pub(crate) hwnd: WindowHandle,

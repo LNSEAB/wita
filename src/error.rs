@@ -40,6 +40,7 @@ fn format_message(code: u32) -> Option<String> {
     }
 }
 
+/// Represents an Win32 API error.
 #[derive(Default, Debug)]
 pub struct ApiError(u32);
 
