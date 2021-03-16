@@ -6,9 +6,7 @@ edition = "2018"
 
 [dependencies]
 wita = { path = "../.." }
+anyhow = "1.0.38"
 
 [build-dependencies]
 embed-resource = "1.4.1"
-
-[dev-dependencies]
-anyhow = "1.0.38"

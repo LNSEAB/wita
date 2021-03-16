@@ -453,8 +453,8 @@ pub(crate) unsafe extern "system" fn window_proc<T: EventHandler + 'static>(
                         SetWindowPos(
                             hwnd,
                             std::ptr::null_mut(),
-                            state.set_position.x,
-                            state.set_position.y,
+                            state.set_position.0,
+                            state.set_position.1,
                             0,
                             0,
                             SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE,

@@ -324,7 +324,7 @@ where
                 WindowState {
                     title: self.title.as_ref().to_string(),
                     style: self.style,
-                    set_position: self.position,
+                    set_position: (self.position.x, self.position.y),
                     set_inner_size: inner_size,
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
@@ -506,7 +506,7 @@ where
                 WindowState {
                     title: String::new(),
                     style: WS_CHILD,
-                    set_position: ScreenPosition::new(position.x, position.y),
+                    set_position: (position.x, position.y),
                     set_inner_size: size,
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
@@ -533,7 +533,7 @@ where
 pub(crate) struct WindowState {
     pub title: String,
     pub style: DWORD,
-    pub set_position: ScreenPosition,
+    pub set_position: (i32, i32),
     pub set_inner_size: PhysicalSize<u32>,
     pub visible_ime_composition_window: bool,
     pub visible_ime_candidate_window: bool,
@@ -593,7 +593,7 @@ impl Window {
     pub fn set_position(&self, position: ScreenPosition) {
         unsafe {
             let mut state = self.state.write().unwrap();
-            state.set_position = position;
+            state.set_position = (position.x, position.y);
             PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetPosition as usize, 0);
         }
     }
