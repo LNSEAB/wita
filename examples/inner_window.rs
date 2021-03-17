@@ -14,6 +14,7 @@ impl Application {
     fn new() -> anyhow::Result<Self> {
         let root_wnd = wita::WindowBuilder::new()
             .title("wita inner window")
+            .ime(true)
             .build()?;
         let d2d1_wnd = wita::InnerWindowBuilder::new()
             .parent(&root_wnd)

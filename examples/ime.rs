@@ -1,16 +1,15 @@
-struct Application {
-    enabled_ime: bool,
-}
+struct Application;
 
 impl Application {
     fn new() -> anyhow::Result<Self> {
         let window = wita::WindowBuilder::new()
             .title("wita ime")
+            .ime(true)
             .visible_ime_composition_window(true)
             .visible_ime_candidate_window(false)
             .build()?;
         window.set_ime_position(wita::LogicalPosition::new(100, 100));
-        Ok(Self { enabled_ime: true })
+        Ok(Self)
     }
 }
 
@@ -23,14 +22,12 @@ impl wita::EventHandler for Application {
         _: bool,
     ) {
         if code.vkey == wita::VirtualKey::Char('T') && state == wita::KeyState::Released {
-            if self.enabled_ime {
-                window.disable_ime();
-                self.enabled_ime = false;
-                println!("disabled ime");
-            } else {
-                window.enable_ime();
-                self.enabled_ime = true;
+            let flag = !window.is_enabled_ime();
+            window.ime(flag);
+            if flag {
                 println!("enabled ime");
+            } else {
+                println!("disabled ime");
             }
         }
     }

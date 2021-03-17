@@ -83,6 +83,7 @@ pub mod error;
 
 pub use context::RunType;
 pub use device::*;
+#[doc(inline)]
 pub use error::ApiError;
 pub use event::*;
 pub use geometry::*;

@@ -148,6 +148,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     inner_size: S,
     visibility: bool,
     style: DWORD,
+    enabled_ime: bool,
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
     parent: Option<Window>,
@@ -167,6 +168,7 @@ impl WindowBuilder<(), ()> {
             inner_size: LogicalSize::new(640, 480),
             style: WindowStyle::default().value(),
             visibility: true,
+            enabled_ime: false,
             visible_ime_composition_window: true,
             visible_ime_candidate_window: true,
             parent: None,
@@ -187,6 +189,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             inner_size: self.inner_size,
             style: self.style,
             visibility: self.visibility,
+            enabled_ime: self.enabled_ime,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
@@ -210,6 +213,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             inner_size,
             style: self.style,
             visibility: self.visibility,
+            enabled_ime: self.enabled_ime,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             parent: self.parent,
@@ -274,6 +278,11 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self
     }
     
+    pub fn ime(mut self, enable: bool) -> WindowBuilder<Ti, S> {
+        self.enabled_ime = enable;
+        self
+    }
+    
     #[cfg(feature = "raw_input")]
     pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
         self.raw_input_window_state = state;
@@ -326,6 +335,7 @@ where
                     style: self.style,
                     set_position: (self.position.x, self.position.y),
                     set_inner_size: inner_size,
+                    enabled_ime: self.enabled_ime,
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
@@ -360,6 +370,9 @@ where
                     small as LPARAM,
                 );
             }
+            if self.enabled_ime {
+                window.handle.ime(self.enabled_ime);
+            }
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);
             push_window(hwnd, window);
@@ -374,7 +387,6 @@ pub struct InnerWindowBuilder<W = (), P = (), S = ()> {
     position: P,
     size: S,
     visibility: bool,
-    enabled_ime: bool,
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
     accept_drag_files: bool,
@@ -390,7 +402,6 @@ impl InnerWindowBuilder<(), (), ()> {
             position: LogicalPosition::new(0.0, 0.0),
             size: (),
             visibility: true,
-            enabled_ime: false,
             visible_ime_composition_window: true,
             visible_ime_candidate_window: true,
             accept_drag_files: false,
@@ -407,7 +418,6 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             position: self.position,
             size: self.size,
             visibility: self.visibility,
-            enabled_ime: self.enabled_ime,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
@@ -422,7 +432,6 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             position,
             size: self.size,
             visibility: self.visibility,
-            enabled_ime: self.enabled_ime,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
@@ -437,7 +446,6 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             position: self.position,
             size,
             visibility: self.visibility,
-            enabled_ime: self.enabled_ime,
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
@@ -446,23 +454,8 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
         }
     }
     
-    pub fn visible(mut self, flag: bool) -> Self {
-        self.visibility = flag;
-        self
-    }
-    
-    pub fn ime(mut self, flag: bool) -> Self {
-        self.enabled_ime = flag;
-        self
-    }
-
-    pub fn enable_ime(mut self) -> Self {
-        self.enabled_ime = true;
-        self
-    }
-    
-    pub fn disable_ime(mut self) -> Self {
-        self.enabled_ime = false;
+    pub fn visible(mut self, visibility: bool) -> Self {
+        self.visibility = visibility;
         self
     }
     
@@ -509,6 +502,7 @@ where
                     style: WS_CHILD,
                     set_position: (position.x, position.y),
                     set_inner_size: size,
+                    enabled_ime: self.parent.is_enabled_ime(),
                     visible_ime_composition_window: self.visible_ime_composition_window,
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
@@ -536,6 +530,7 @@ pub(crate) struct WindowState {
     pub style: DWORD,
     pub set_position: (i32, i32),
     pub set_inner_size: PhysicalSize<u32>,
+    pub enabled_ime: bool,
     pub visible_ime_composition_window: bool,
     pub visible_ime_candidate_window: bool,
     pub ime_position: PhysicalPosition<i32>,
@@ -665,17 +660,17 @@ impl Window {
             y: state.ime_position.y,
         }
     }
-
-    pub fn enable_ime(&self) {
+    
+    pub fn ime(&self, enable: bool) {
         unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
+            if enable {
+                PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
+            } else {
+                PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
+            }
         }
-    }
-
-    pub fn disable_ime(&self) {
-        unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
-        }
+        let mut state = self.state.write().unwrap();
+        state.enabled_ime = enable;
     }
 
     pub fn set_ime_position(&self, position: impl ToPhysicalPosition<i32>) {
@@ -683,6 +678,11 @@ impl Window {
         let position = position.to_physical(self.dpi() as i32);
         state.ime_position.x = position.x;
         state.ime_position.y = position.y;
+    }
+    
+    pub fn is_enabled_ime(&self) -> bool {
+        let state = self.state.read().unwrap();
+        state.enabled_ime
     }
 
     pub fn style(&self) -> WindowStyle {
