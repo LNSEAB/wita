@@ -117,7 +117,7 @@ where
     match run_type {
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
-                call_handler(|eh: &mut T, _| eh.begin_frame());
+                call_handler(|eh: &mut T, _| eh.pre_processing());
                 if PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
@@ -125,7 +125,7 @@ where
                     call_handler(|eh: &mut T, _| eh.idle());
                 }
                 maybe_resume_unwind();
-                call_handler(|eh: &mut T, _| eh.end_frame());
+                call_handler(|eh: &mut T, _| eh.post_processing());
             }
         },
         RunType::Wait => unsafe {
