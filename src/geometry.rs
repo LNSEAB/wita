@@ -1,5 +1,6 @@
 use crate::DEFAULT_DPI;
 
+/// A generic position
 #[derive(Clone, Copy, PartialEq, Debug)]
 #[repr(C)]
 pub struct Position<T, U> {
@@ -36,6 +37,7 @@ impl<T, U> From<(T, T)> for Position<T, U> {
     }
 }
 
+/// A generic size
 #[derive(Clone, Copy, PartialEq, Debug)]
 #[repr(C)]
 pub struct Size<T, U> {
@@ -72,17 +74,25 @@ impl<T, U> From<(T, T)> for Size<T, U> {
     }
 }
 
+/// Logical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Logical;
+/// Physical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Physical;
+/// Screen coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Screen;
 
+/// A position in logical coordinate.
 pub type LogicalPosition<T> = Position<T, Logical>;
+/// A size in logical coordinate.
 pub type LogicalSize<T> = Size<T, Logical>;
+/// A position in physical coordinate.
 pub type PhysicalPosition<T> = Position<T, Physical>;
+/// A size in physical coordinate.
 pub type PhysicalSize<T> = Size<T, Physical>;
+/// A position in screen coordinate.
 pub type ScreenPosition = Position<i32, Screen>;
 
 #[inline]
@@ -153,6 +163,7 @@ where
     }
 }
 
+/// Converts to a logical position.
 pub trait ToLogicalPosition<T> {
     fn to_logical(&self, dpi: T) -> Position<T, Logical>;
 }
@@ -177,6 +188,7 @@ where
     }
 }
 
+/// Converts to a logical size.
 pub trait ToLogicalSize<T> {
     fn to_logical(&self, dpi: T) -> Size<T, Logical>;
 }
@@ -201,6 +213,7 @@ where
     }
 }
 
+/// Converts to a physical position.
 pub trait ToPhysicalPosition<T> {
     fn to_physical(&self, dpi: T) -> Position<T, Physical>;
 }
@@ -225,6 +238,7 @@ where
     }
 }
 
+/// Converts to a physical size.
 pub trait ToPhysicalSize<T> {
     fn to_physical(&self, dpi: T) -> Size<T, Physical>;
 }
