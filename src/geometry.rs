@@ -1,165 +1,251 @@
 use crate::DEFAULT_DPI;
 
-/// A position in logical coordinate.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub struct LogicalPosition<T> {
+#[repr(C)]
+pub struct Position<T, U> {
     pub x: T,
     pub y: T,
+    _u: std::marker::PhantomData<U>,
 }
 
-impl<T> LogicalPosition<T> {
+impl<T, U> Position<T, U> {
+    #[inline]
     pub fn new(x: T, y: T) -> Self {
-        Self { x, y }
+        Self {
+            x,
+            y,
+            _u: std::marker::PhantomData,
+        }
     }
 }
 
-/// A position in physical coordinate.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub struct PhysicalPosition<T> {
-    pub x: T,
-    pub y: T,
-}
-
-impl<T> PhysicalPosition<T> {
-    pub fn new(x: T, y: T) -> Self {
-        Self { x, y }
+impl<T, U> From<[T; 2]> for Position<T, U> 
+where
+    T: Copy
+{
+    #[inline]
+    fn from(src: [T; 2]) -> Position<T, U> {
+        Position::new(src[0], src[1])
     }
 }
 
-/// A size in logical coordinate.
+impl<T, U> From<(T, T)> for Position<T, U> {
+    #[inline]
+    fn from(src: (T, T)) -> Position<T, U> {
+        Position::new(src.0, src.1)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub struct LogicalSize<T> {
+#[repr(C)]
+pub struct Size<T, U> {
     pub width: T,
     pub height: T,
+    _u: std::marker::PhantomData<U>,
 }
 
-impl<T> LogicalSize<T> {
+impl<T, U> Size<T, U> {
+    #[inline]
     pub fn new(width: T, height: T) -> Self {
-        Self { width, height }
+        Self {
+            width,
+            height,
+            _u: std::marker::PhantomData,
+        }
     }
 }
 
-/// A size in physical coordinate.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub struct PhysicalSize<T> {
-    pub width: T,
-    pub height: T,
-}
-
-impl<T> PhysicalSize<T> {
-    pub fn new(width: T, height: T) -> Self {
-        Self { width, height }
+impl<T, U> From<[T; 2]> for Size<T, U> 
+where
+    T: Copy
+{
+    #[inline]
+    fn from(src: [T; 2]) -> Size<T, U> {
+        Size::new(src[0], src[1])
     }
 }
 
-/// Converts to a logical position.
+impl<T, U> From<(T, T)> for Size<T, U> {
+    #[inline]
+    fn from(src: (T, T)) -> Size<T, U> {
+        Size::new(src.0, src.1)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Logical;
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Physical;
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Screen;
+
+pub type LogicalPosition<T> = Position<T, Logical>;
+pub type LogicalSize<T> = Size<T, Logical>;
+pub type PhysicalPosition<T> = Position<T, Physical>;
+pub type PhysicalSize<T> = Size<T, Physical>;
+pub type ScreenPosition = Position<i32, Screen>;
+
+#[inline]
+fn to_logical_value<T>(a: T, dpi: T) -> T
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    a * num::cast(DEFAULT_DPI).unwrap() / dpi
+}
+
+#[inline]
+fn to_physical_value<T>(a: T, dpi: T) -> T
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    a * dpi / num::cast(DEFAULT_DPI).unwrap() 
+}
+
+impl<T> Position<T, Logical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    pub fn to_physical(&self, dpi: T) -> Position<T, Physical> {
+        Position::new(
+            to_physical_value(self.x, dpi),
+            to_physical_value(self.y, dpi),
+        )
+    }
+}
+
+impl<T> Position<T, Physical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    pub fn to_logical(&self, dpi: T) -> Position<T, Logical> {
+        Position::new(
+            to_logical_value(self.x, dpi),
+            to_logical_value(self.y, dpi),
+        )
+    }
+}
+
+impl<T> Size<T, Logical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    pub fn to_physical(&self, dpi: T) -> Size<T, Physical> {
+        Size::new(
+            to_physical_value(self.width, dpi),
+            to_physical_value(self.height, dpi),
+        )
+    }
+}
+
+impl<T> Size<T, Physical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    pub fn to_logical(&self, dpi: T) -> Size<T, Logical> {
+        Size::new(
+            to_logical_value(self.width, dpi),
+            to_logical_value(self.height, dpi),
+        )
+    }
+}
+
 pub trait ToLogicalPosition<T> {
-    fn to_logical(&self, dpi: T) -> LogicalPosition<T>;
+    fn to_logical(&self, dpi: T) -> Position<T, Logical>;
 }
 
-/// Converts to a physical position.
-pub trait ToPhysicalPosition<T> {
-    fn to_physical(&self, dpi: T) -> PhysicalPosition<T>;
+impl<T> ToLogicalPosition<T> for Position<T, Logical> 
+where
+    T: Copy
+{
+    #[inline]
+    fn to_logical(&self, _: T) -> Position<T, Logical> {
+        *self
+    }
 }
 
-/// Converts to a logical size.
+impl<T> ToLogicalPosition<T> for Position<T, Physical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    fn to_logical(&self, dpi: T) -> Position<T, Logical> {
+        self.to_logical(dpi)
+    }
+}
+
 pub trait ToLogicalSize<T> {
-    fn to_logical(&self, dpi: T) -> LogicalSize<T>;
+    fn to_logical(&self, dpi: T) -> Size<T, Logical>;
 }
 
-/// Converts to a physical size.
+impl<T> ToLogicalSize<T> for Size<T, Logical> 
+where
+    T: Copy
+{
+    #[inline]
+    fn to_logical(&self, _: T) -> Size<T, Logical> {
+        *self
+    }
+}
+
+impl<T> ToLogicalSize<T> for Size<T, Physical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    fn to_logical(&self, dpi: T) -> Size<T, Logical> {
+        self.to_logical(dpi)
+    }
+}
+
+pub trait ToPhysicalPosition<T> {
+    fn to_physical(&self, dpi: T) -> Position<T, Physical>;
+}
+
+impl<T> ToPhysicalPosition<T> for Position<T, Logical> 
+where
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+{
+    #[inline]
+    fn to_physical(&self, dpi: T) -> Position<T, Physical> {
+        self.to_physical(dpi)
+    }
+}
+
+impl<T> ToPhysicalPosition<T> for Position<T, Physical>
+where
+    T: Copy
+{
+    #[inline]
+    fn to_physical(&self, _: T) -> Position<T, Physical> {
+        *self
+    }
+}
+
 pub trait ToPhysicalSize<T> {
-    fn to_physical(&self, dpi: T) -> PhysicalSize<T>;
+    fn to_physical(&self, dpi: T) -> Size<T, Physical>;
 }
 
-impl<T: Clone> ToLogicalPosition<T> for LogicalPosition<T> {
-    fn to_logical(&self, _: T) -> LogicalPosition<T> {
-        self.clone()
-    }
-}
-
-impl<T> ToLogicalPosition<T> for PhysicalPosition<T>
+impl<T> ToPhysicalSize<T> for Size<T, Logical> 
 where
-    T: num::NumCast + std::ops::Mul<T, Output = T> + std::ops::Div<T, Output = T> + Copy,
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
 {
-    fn to_logical(&self, dpi: T) -> LogicalPosition<T> {
-        LogicalPosition {
-            x: self.x * num::cast(DEFAULT_DPI).unwrap() / dpi,
-            y: self.y * num::cast(DEFAULT_DPI).unwrap() / dpi,
-        }
+    #[inline]
+    fn to_physical(&self, dpi: T) -> Size<T, Physical> {
+        self.to_physical(dpi)
     }
 }
 
-impl<T> ToPhysicalPosition<T> for LogicalPosition<T>
+impl<T> ToPhysicalSize<T> for Size<T, Physical>
 where
-    T: num::NumCast + std::ops::Mul<T, Output = T> + std::ops::Div<T, Output = T> + Copy,
+    T: Copy
 {
-    fn to_physical(&self, dpi: T) -> PhysicalPosition<T> {
-        PhysicalPosition {
-            x: self.x * dpi / num::cast(DEFAULT_DPI).unwrap(),
-            y: self.y * dpi / num::cast(DEFAULT_DPI).unwrap(),
-        }
-    }
-}
-
-impl<T: Clone> ToPhysicalPosition<T> for PhysicalPosition<T> {
-    fn to_physical(&self, _: T) -> PhysicalPosition<T> {
-        self.clone()
-    }
-}
-
-impl<T: Clone> ToLogicalSize<T> for LogicalSize<T> {
-    fn to_logical(&self, _: T) -> LogicalSize<T> {
-        self.clone()
-    }
-}
-
-impl<T> ToLogicalSize<T> for PhysicalSize<T>
-where
-    T: num::NumCast + std::ops::Mul<T, Output = T> + std::ops::Div<T, Output = T> + Copy,
-{
-    fn to_logical(&self, dpi: T) -> LogicalSize<T> {
-        LogicalSize {
-            width: self.width * num::cast(DEFAULT_DPI).unwrap() / dpi,
-            height: self.height * num::cast(DEFAULT_DPI).unwrap() / dpi,
-        }
-    }
-}
-
-impl<T> ToPhysicalSize<T> for LogicalSize<T>
-where
-    T: num::NumCast + std::ops::Mul<T, Output = T> + std::ops::Div<T, Output = T> + Copy,
-{
-    fn to_physical(&self, dpi: T) -> PhysicalSize<T> {
-        PhysicalSize {
-            width: self.width * dpi / num::cast(DEFAULT_DPI).unwrap(),
-            height: self.height * dpi / num::cast(DEFAULT_DPI).unwrap(),
-        }
-    }
-}
-
-impl<T: Clone> ToPhysicalSize<T> for PhysicalSize<T> {
-    fn to_physical(&self, _: T) -> PhysicalSize<T> {
-        self.clone()
-    }
-}
-
-/// A position in screen coordinate.
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub struct ScreenPosition {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl ScreenPosition {
-    pub fn new(x: i32, y: i32) -> Self {
-        Self { x, y }
-    }
-}
-
-impl From<(i32, i32)> for ScreenPosition {
-    fn from(src: (i32, i32)) -> ScreenPosition {
-        ScreenPosition::new(src.0, src.1)
+    #[inline]
+    fn to_physical(&self, _: T) -> Size<T, Physical> {
+        *self
     }
 }
 

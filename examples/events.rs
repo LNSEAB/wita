@@ -1,5 +1,3 @@
-use wita::ToLogicalPosition;
-
 struct Application;
 
 impl Application {

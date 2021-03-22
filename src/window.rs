@@ -655,10 +655,10 @@ impl Window {
 
     pub fn ime_position(&self) -> PhysicalPosition<i32> {
         let state = self.state.read().unwrap();
-        PhysicalPosition {
-            x: state.ime_position.x,
-            y: state.ime_position.y,
-        }
+        PhysicalPosition::new(
+            state.ime_position.x,
+            state.ime_position.y,
+        )
     }
     
     pub fn ime(&self, enable: bool) {
