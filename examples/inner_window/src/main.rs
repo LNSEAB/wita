@@ -1,13 +1,20 @@
-use winapi::um::d2d1::*;
-use winapi::um::dcommon::*;
-use winapi::shared::dxgiformat::*;
-use winapi::Interface;
-use com_ptr::*;
+#[allow(warnings)]
+mod bindings {
+    ::windows::include_bindings!();
+}
+
+use bindings::windows::win32::{
+    windows_and_messaging::*,
+    direct2d::*,
+    dxgi::*,
+};
+use windows::Abi;
+use windows::Interface;
 
 struct Application {
     root_wnd: wita::Window,
     d2d1_wnd: wita::Window,
-    render_target: ComPtr<ID2D1HwndRenderTarget>,
+    render_target: ID2D1HwndRenderTarget,
 }
 
 impl Application {
@@ -21,38 +28,41 @@ impl Application {
             .position(wita::LogicalPosition::new(10, 10))
             .size(wita::LogicalSize::new(320, 240))
             .build()?;
-        let d2d1_factory = ComPtr::new(|| unsafe {
-            let mut p = std::ptr::null_mut();
-            let ret = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &ID2D1Factory::uuidof(), std::ptr::null(), &mut p);
-            hresult(p as *mut ID2D1Factory, ret)
-        })?;
+        let d2d1_factory = unsafe {
+            let mut p: Option<ID2D1Factory> = None;
+            D2D1CreateFactory(
+                D2D1_FACTORY_TYPE::D2D1_FACTORY_TYPE_MULTI_THREADED,
+                &ID2D1Factory::IID,
+                std::ptr::null(),
+                p.set_abi(),
+            ).and_some(p)?
+        };
         let dpi = d2d1_wnd.dpi() as f32;
         let render_target_size = d2d1_wnd.inner_size();
-        let render_target = ComPtr::new(|| unsafe {
-            let mut p = std::ptr::null_mut();
-            let ret = d2d1_factory.CreateHwndRenderTarget(
+        let render_target = unsafe {
+            let mut p = None;
+            d2d1_factory.CreateHwndRenderTarget(
                 &D2D1_RENDER_TARGET_PROPERTIES {
-                    _type: D2D1_RENDER_TARGET_TYPE_DEFAULT,
-                    pixelFormat: D2D1_PIXEL_FORMAT {
-                        format: DXGI_FORMAT_R8G8B8A8_UNORM,
-                        alphaMode: D2D1_ALPHA_MODE_UNKNOWN,
+                    r#type: D2D1_RENDER_TARGET_TYPE::D2D1_RENDER_TARGET_TYPE_DEFAULT,
+                    pixel_format: D2D1_PIXEL_FORMAT {
+                        format: DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+                        alpha_mode: D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_UNKNOWN,
                     },
-                    dpiX: dpi,
-                    dpiY: dpi,
+                    dpix: dpi,
+                    dpiy: dpi,
                     ..Default::default()
                 },
                 &D2D1_HWND_RENDER_TARGET_PROPERTIES {
-                    hwnd: d2d1_wnd.raw_handle() as _,
-                    pixelSize: winapi::um::d2d1::D2D1_SIZE_U {
+                    hwnd: HWND(d2d1_wnd.raw_handle() as _),
+                    pixel_size: D2D_SIZE_U {
                         width: render_target_size.width,
                         height: render_target_size.height,
                     },
                     ..Default::default()
                 },
-                &mut p
-            );
-            hresult(p, ret)
-        })?;
+                &mut p,
+            ).and_some(p)?
+        };
         Ok(Self {
             render_target,
             root_wnd,
@@ -62,7 +72,13 @@ impl Application {
 }
 
 impl wita::EventHandler for Application {
-    fn mouse_input(&mut self, wnd: &wita::Window, btn: wita::MouseButton, state: wita::KeyState, _: wita::MouseState) {
+    fn mouse_input(
+        &mut self,
+        wnd: &wita::Window,
+        btn: wita::MouseButton,
+        state: wita::KeyState,
+        _: wita::MouseState,
+    ) {
         if btn == wita::MouseButton::Left && state == wita::KeyState::Pressed {
             if wnd == &self.root_wnd {
                 println!("root_wnd");
@@ -71,17 +87,18 @@ impl wita::EventHandler for Application {
             }
         }
     }
-    
+
     fn draw(&mut self, _: &wita::Window) {
         unsafe {
             self.render_target.BeginDraw();
-            self.render_target.Clear(&D2D1_COLOR_F {
+            self.render_target.Clear(&DXGI_RGBA {
                 r: 0.0,
                 g: 0.0,
                 b: 0.3,
                 a: 0.0,
             });
-            self.render_target.EndDraw(std::ptr::null_mut(), std::ptr::null_mut());
+            self.render_target
+                .EndDraw(std::ptr::null_mut(), std::ptr::null_mut()).unwrap();
         }
     }
 }

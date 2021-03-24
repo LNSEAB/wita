@@ -1,7 +1,7 @@
+use crate::bindings::windows::win32::{keyboard_and_mouse_input::*, windows_and_messaging::*};
 use crate::geometry::*;
 #[cfg(feature = "serde")]
 use serde::{de::*, *};
-use winapi::um::winuser::*;
 
 /// Describes the state of a keyboard key and a mouse button.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -194,10 +194,9 @@ impl KeyCode {
 }
 
 pub(crate) fn as_virtual_key(k: i32) -> VirtualKey {
-    const ZERO: i32 = b'0' as i32;
-    const Z: i32 = b'Z' as i32;
-    let value = k as i32;
-    match value {
+    const ZERO: u32 = b'0' as _;
+    const Z: u32 = b'Z' as _;
+    match k as u32 {
         v @ ZERO..=Z => VirtualKey::Char((v as u8).into()),
         VK_ESCAPE => VirtualKey::Esc,
         VK_TAB => VirtualKey::Tab,

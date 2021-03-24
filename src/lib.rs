@@ -66,6 +66,11 @@
 //! [`raw_handle`]: struct.Window.html#method.raw_handle
 //!
 
+#[allow(warnings)]
+mod bindings {
+    ::windows::include_bindings!();
+}
+
 mod api;
 mod context;
 mod device;
@@ -91,9 +96,8 @@ pub use monitor::*;
 pub use resource::*;
 pub use window::*;
 
+use bindings::windows::win32::{system_services::*, windows_and_messaging::*};
 use context::*;
-use std::ptr::null_mut;
-use winapi::um::winuser::*;
 
 /// The value is an unit in logical coordinates.
 pub const DEFAULT_DPI: i32 = 96;
@@ -118,7 +122,9 @@ where
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
                 call_handler(|eh: &mut T, _| eh.pre_processing());
-                if PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                if PeekMessageW(&mut msg, HWND(0), 0, 0, PeekMessage_wRemoveMsg::PM_REMOVE)
+                    != BOOL(0)
+                {
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
                 } else {
@@ -130,8 +136,8 @@ where
         },
         RunType::Wait => unsafe {
             loop {
-                let ret = GetMessageW(&mut msg, null_mut(), 0, 0);
-                if ret == 0 || ret == -1 {
+                let ret = GetMessageW(&mut msg, HWND(0), 0, 0);
+                if ret == BOOL(0) || ret == BOOL(-1) {
                     break;
                 }
                 TranslateMessage(&msg);

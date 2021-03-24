@@ -17,35 +17,18 @@ default-target = "x86_64-pc-windows-msvc"
 all-featurse = true
 
 [features]
-raw_input = ["winapi/hidusage", "winapi/hidpi"]
+raw_input = []
 
 [dependencies]
-winapi = { version = "0.3.9", features = [
-	"libloaderapi",
-	"winuser",
-	"wingdi",
-	"shellscalingapi",
-	"windowsx",
-	"imm",
-	"hidsdi",
-	"hidpi",
-	"winerror",
-	"shellapi",
-	"errhandlingapi",
-	"fileapi",
-	"handleapi",
-	"winbase",
-	"impl-default",
-] }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 num = "0.3.1"
 raw-window-handle = "0.3.3"
 log = "0.4.14"
+windows = "0.6.0"
 
 [dev-dependencies]
 anyhow = "1.0.38"
-winapi = { version = "0.3.9", features = [
-	"d2d1",
-	"impl-default"
-] }
-com_ptr = "0.2.1"
+windows = "0.6.0"
+
+[build-dependencies]
+windows = "0.6.0"

@@ -1,8 +1,8 @@
+use crate::bindings::windows::win32::windows_and_messaging::*;
 use crate::{device::*, event::EventHandler, window::LocalWindow};
 use std::any::Any;
 use std::cell::RefCell;
 use std::panic::resume_unwind;
-use winapi::shared::windef::*;
 
 /// Describes event loop types.
 pub enum RunType {

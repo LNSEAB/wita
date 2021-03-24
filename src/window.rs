@@ -1,3 +1,7 @@
+use crate::bindings::windows::win32::{
+    display_devices::*, gdi::*, hi_dpi::*, menus_and_resources::*, shell::*, system_services::*,
+    windows_and_messaging::*,
+};
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
 use crate::DEFAULT_DPI;
@@ -7,6 +11,7 @@ use crate::{
     error::*,
     event::EventHandler,
     geometry::*,
+    ime,
     procedure::{window_proc, UserMessage},
     resource::*,
 };
@@ -14,13 +19,6 @@ use raw_window_handle::{windows::WindowsHandle, HasRawWindowHandle, RawWindowHan
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Once, RwLock};
-use winapi::shared::{minwindef::*, windef::*};
-use winapi::um::{
-    libloaderapi::GetModuleHandleW,
-    shellapi::*,
-    wingdi::{GetStockObject, WHITE_BRUSH},
-    winuser::*,
-};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct WindowHandle(HWND);
@@ -30,10 +28,10 @@ unsafe impl Sync for WindowHandle {}
 
 /// A window style and the borderless window style.
 pub trait Style {
-    fn value(&self) -> DWORD;
+    fn value(&self) -> u32;
 
     fn is_borderless(&self) -> bool {
-        self.value() == WS_POPUP
+        self.value() == WINDOWS_STYLE::WS_POPUP.0
     }
 }
 
@@ -41,23 +39,23 @@ pub trait Style {
 pub struct BorderlessStyle;
 
 impl Style for BorderlessStyle {
-    fn value(&self) -> DWORD {
-        WS_POPUP
+    fn value(&self) -> u32 {
+        WINDOWS_STYLE::WS_POPUP.0
     }
 }
 
 /// Represents a window style.
-pub struct WindowStyle(DWORD);
+pub struct WindowStyle(u32);
 
 impl WindowStyle {
     pub fn default() -> Self {
         Self(
-            WS_OVERLAPPED
-                | WS_CAPTION
-                | WS_SYSMENU
-                | WS_THICKFRAME
-                | WS_MINIMIZEBOX
-                | WS_MAXIMIZEBOX,
+            WINDOWS_STYLE::WS_OVERLAPPED.0
+                | WINDOWS_STYLE::WS_CAPTION.0
+                | WINDOWS_STYLE::WS_SYSMENU.0
+                | WINDOWS_STYLE::WS_THICKFRAME.0
+                | WINDOWS_STYLE::WS_MINIMIZEBOX.0
+                | WINDOWS_STYLE::WS_MAXIMIZEBOX.0,
         )
     }
 
@@ -67,38 +65,38 @@ impl WindowStyle {
 
     pub fn resizable(mut self, resizable: bool) -> Self {
         if resizable {
-            self.0 |= WS_THICKFRAME;
+            self.0 |= WINDOWS_STYLE::WS_THICKFRAME.0;
         } else {
-            self.0 &= !WS_THICKFRAME;
+            self.0 &= !WINDOWS_STYLE::WS_THICKFRAME.0;
         }
         self
     }
 
     pub fn has_minimize_box(mut self, has_minimize_box: bool) -> Self {
         if has_minimize_box {
-            self.0 |= WS_MINIMIZEBOX;
+            self.0 |= WINDOWS_STYLE::WS_MINIMIZEBOX.0;
         } else {
-            self.0 &= !WS_MINIMIZEBOX;
+            self.0 &= !WINDOWS_STYLE::WS_MINIMIZEBOX.0;
         }
         self
     }
 
     pub fn has_maximize_box(mut self, has_maximize_box: bool) -> Self {
         if has_maximize_box {
-            self.0 |= WS_MAXIMIZEBOX;
+            self.0 |= WINDOWS_STYLE::WS_MAXIMIZEBOX.0;
         } else {
-            self.0 &= !WS_MAXIMIZEBOX;
+            self.0 &= !WINDOWS_STYLE::WS_MAXIMIZEBOX.0;
         }
         self
     }
 
     pub fn is_borderless(&self) -> bool {
-        self.value() == WS_POPUP
+        self.value() == WINDOWS_STYLE::WS_POPUP.0
     }
 }
 
 impl Style for WindowStyle {
-    fn value(&self) -> DWORD {
+    fn value(&self) -> u32 {
         self.0
     }
 }
@@ -122,18 +120,18 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
     unsafe {
         let class_name = window_class_name();
         let wc = WNDCLASSEXW {
-            cbSize: std::mem::size_of::<WNDCLASSEXW>() as UINT,
-            style: CS_VREDRAW | CS_HREDRAW,
-            lpfnWndProc: Some(window_proc::<T>),
-            cbClsExtra: 0,
-            cbWndExtra: 0,
-            hInstance: GetModuleHandleW(std::ptr::null_mut()),
-            hIcon: std::ptr::null_mut(),
-            hCursor: LoadCursorW(std::ptr::null_mut(), IDC_ARROW),
-            hbrBackground: GetStockObject(WHITE_BRUSH as i32) as HBRUSH,
-            lpszMenuName: std::ptr::null_mut(),
-            lpszClassName: class_name.as_ptr(),
-            hIconSm: std::ptr::null_mut(),
+            cb_size: std::mem::size_of::<WNDCLASSEXW>() as _,
+            style: WNDCLASS_STYLES(WNDCLASS_STYLES::CS_VREDRAW.0 | WNDCLASS_STYLES::CS_HREDRAW.0),
+            lpfn_wnd_proc: Some(window_proc::<T>),
+            cb_cls_extra: 0,
+            cb_wnd_extra: 0,
+            h_instance: HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut()))),
+            h_icon: HICON(0),
+            h_cursor: LoadCursorW(HINSTANCE(0), PWSTR(IDC_ARROW as _)),
+            hbr_background: HBRUSH(GetStockObject(GetStockObject_iFlags::WHITE_BRUSH).0),
+            lpsz_menu_name: PWSTR(std::ptr::null_mut()),
+            lpsz_class_name: PWSTR(class_name.as_ptr() as _),
+            h_icon_sm: HICON(0),
         };
         if RegisterClassExW(&wc) == 0 {
             panic!("cannot register the window class");
@@ -147,7 +145,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     position: ScreenPosition,
     inner_size: S,
     visibility: bool,
-    style: DWORD,
+    style: u32,
     enabled_ime: bool,
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
@@ -277,12 +275,12 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self.icon = Some(icon);
         self
     }
-    
+
     pub fn ime(mut self, enable: bool) -> WindowBuilder<Ti, S> {
         self.enabled_ime = enable;
         self
     }
-    
+
     #[cfg(feature = "raw_input")]
     pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
         self.raw_input_window_state = state;
@@ -310,22 +308,22 @@ where
             let dpi = get_dpi_from_point(self.position);
             let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
-            let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
+            let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
             let hwnd = CreateWindowExW(
-                0,
-                class_name.as_ptr(),
-                title.as_ptr(),
-                self.style,
+                WINDOWS_EX_STYLE(0),
+                PWSTR(class_name.as_ptr() as _),
+                PWSTR(title.as_ptr() as _),
+                WINDOWS_STYLE(self.style),
                 self.position.x,
                 self.position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
+                HWND(0),
+                HMENU(0),
                 hinst,
                 std::ptr::null_mut(),
             );
-            if hwnd == std::ptr::null_mut() {
+            if hwnd == HWND(0) {
                 return Err(ApiError::new());
             }
             let window = LocalWindow::new(
@@ -352,22 +350,22 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, TRUE);
+                DragAcceptFiles(hwnd, BOOL(1));
             }
             if let Some(icon) = self.icon {
                 let big = load_icon(&icon, hinst);
                 let small = load_small_icon(&icon, hinst);
                 SendMessageW(
-                    handle.raw_handle() as _,
+                    HWND(handle.raw_handle() as _),
                     WM_SETICON,
-                    ICON_BIG as WPARAM,
-                    big as LPARAM,
+                    WPARAM(ICON_BIG as _),
+                    LPARAM(big.0 as _),
                 );
                 SendMessageW(
-                    handle.raw_handle() as _,
+                    HWND(handle.raw_handle() as _),
                     WM_SETICON,
-                    ICON_SMALL as WPARAM,
-                    small as LPARAM,
+                    WPARAM(ICON_SMALL as _),
+                    LPARAM(small.0 as _),
                 );
             }
             if self.enabled_ime {
@@ -391,7 +389,7 @@ pub struct InnerWindowBuilder<W = (), P = (), S = ()> {
     visible_ime_candidate_window: bool,
     accept_drag_files: bool,
     #[cfg(feature = "raw_input")]
-    raw_input_window_state: raw_input::WindowState
+    raw_input_window_state: raw_input::WindowState,
 }
 
 impl InnerWindowBuilder<(), (), ()> {
@@ -425,7 +423,7 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             raw_input_window_state: self.raw_input_window_state,
         }
     }
-    
+
     pub fn position<T>(self, position: T) -> InnerWindowBuilder<W, T, S> {
         InnerWindowBuilder {
             parent: self.parent,
@@ -439,7 +437,7 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             raw_input_window_state: self.raw_input_window_state,
         }
     }
-    
+
     pub fn size<T>(self, size: T) -> InnerWindowBuilder<W, P, T> {
         InnerWindowBuilder {
             parent: self.parent,
@@ -453,19 +451,19 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             raw_input_window_state: self.raw_input_window_state,
         }
     }
-    
+
     pub fn visible(mut self, visibility: bool) -> Self {
         self.visibility = visibility;
         self
     }
-    
+
     pub fn accept_drag_files(mut self) -> Self {
         self.accept_drag_files = true;
         self
     }
 }
 
-impl<P, S> InnerWindowBuilder<Window, P, S> 
+impl<P, S> InnerWindowBuilder<Window, P, S>
 where
     P: ToPhysicalPosition<i32>,
     S: ToPhysicalSize<u32>,
@@ -476,30 +474,30 @@ where
             let dpi = self.parent.dpi();
             let position = self.position.to_physical(dpi as i32);
             let size = self.size.to_physical(dpi);
-            let rc = adjust_window_rect(size, WS_CHILD, 0, dpi);
-            let hinst = GetModuleHandleW(std::ptr::null_mut()) as HINSTANCE;
+            let rc = adjust_window_rect(size, WINDOWS_STYLE::WS_CHILD.0, 0, dpi);
+            let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
             let hwnd = CreateWindowExW(
-                0,
-                class_name.as_ptr(),
-                std::ptr::null_mut(),
-                WS_CHILD,
+                WINDOWS_EX_STYLE(0),
+                PWSTR(class_name.as_ptr() as _),
+                PWSTR(std::ptr::null_mut() as _),
+                WINDOWS_STYLE::WS_CHILD,
                 position.x,
                 position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
-                self.parent.raw_handle() as _,
-                std::ptr::null_mut(),
+                HWND(self.parent.raw_handle() as _),
+                HMENU(0),
                 hinst,
                 std::ptr::null_mut(),
             );
-            if hwnd == std::ptr::null_mut() {
+            if hwnd == HWND(0) {
                 return Err(ApiError::new());
             }
             let window = LocalWindow::new(
                 hwnd,
                 WindowState {
                     title: String::new(),
-                    style: WS_CHILD,
+                    style: WINDOWS_STYLE::WS_CHILD.0,
                     set_position: (position.x, position.y),
                     set_inner_size: size,
                     enabled_ime: self.parent.is_enabled_ime(),
@@ -515,7 +513,7 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, TRUE);
+                DragAcceptFiles(hwnd, BOOL(1));
             }
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);
@@ -527,7 +525,7 @@ where
 
 pub(crate) struct WindowState {
     pub title: String,
-    pub style: DWORD,
+    pub style: u32,
     pub set_position: (i32, i32),
     pub set_inner_size: PhysicalSize<u32>,
     pub enabled_ime: bool,
@@ -541,7 +539,7 @@ pub(crate) struct WindowState {
 #[derive(Clone)]
 pub(crate) struct LocalWindow {
     pub handle: Window,
-    pub ime_context: Rc<RefCell<ImmContext>>,
+    pub ime_context: Rc<RefCell<ime::ImmContext>>,
 }
 
 impl LocalWindow {
@@ -551,7 +549,7 @@ impl LocalWindow {
                 hwnd: WindowHandle(hwnd),
                 state: Arc::new(RwLock::new(state)),
             },
-            ime_context: Rc::new(RefCell::new(ImmContext::new(hwnd))),
+            ime_context: Rc::new(RefCell::new(ime::ImmContext::new(hwnd))),
         }
     }
 }
@@ -573,7 +571,12 @@ impl Window {
         let mut state = self.state.write().unwrap();
         state.title = title.as_ref().to_string();
         unsafe {
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetTitle as usize, 0);
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                WPARAM(UserMessage::SetTitle as _),
+                LPARAM(0),
+            );
         }
     }
 
@@ -589,7 +592,12 @@ impl Window {
         unsafe {
             let mut state = self.state.write().unwrap();
             state.set_position = (position.x, position.y);
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetPosition as usize, 0);
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                WPARAM(UserMessage::SetPosition as _),
+                LPARAM(0),
+            );
         }
     }
 
@@ -605,7 +613,12 @@ impl Window {
         unsafe {
             let mut state = self.state.write().unwrap();
             state.set_inner_size = size.to_physical(self.dpi());
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetInnerSize as usize, 0);
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                WPARAM(UserMessage::SetInnerSize as _),
+                LPARAM(0),
+            );
         }
     }
 
@@ -619,13 +632,13 @@ impl Window {
 
     pub fn show(&self) {
         unsafe {
-            ShowWindowAsync(self.hwnd.0, SW_SHOW);
+            ShowWindowAsync(self.hwnd.0, SHOW_WINDOW_CMD::SW_SHOW.0 as _);
         }
     }
 
     pub fn hide(&self) {
         unsafe {
-            ShowWindowAsync(self.hwnd.0, SW_HIDE);
+            ShowWindowAsync(self.hwnd.0, SHOW_WINDOW_CMD::SW_HIDE.0 as _);
         }
     }
 
@@ -634,8 +647,8 @@ impl Window {
             RedrawWindow(
                 self.hwnd.0,
                 std::ptr::null(),
-                std::ptr::null_mut(),
-                RDW_INTERNALPAINT,
+                HRGN(0),
+                REDRAW_WINDOW_FLAGS::RDW_INTERNALPAINT,
             );
         }
     }
@@ -648,25 +661,32 @@ impl Window {
     pub fn close(&self) {
         unsafe {
             if !self.is_closed() {
-                PostMessageW(self.hwnd.0, WM_CLOSE, 0, 0);
+                PostMessageW(self.hwnd.0, WM_CLOSE, WPARAM(0), LPARAM(0));
             }
         }
     }
 
     pub fn ime_position(&self) -> PhysicalPosition<i32> {
         let state = self.state.read().unwrap();
-        PhysicalPosition::new(
-            state.ime_position.x,
-            state.ime_position.y,
-        )
+        PhysicalPosition::new(state.ime_position.x, state.ime_position.y)
     }
-    
+
     pub fn ime(&self, enable: bool) {
         unsafe {
             if enable {
-                PostMessageW(self.hwnd.0, WM_USER, UserMessage::EnableIme as usize, 0);
+                PostMessageW(
+                    self.hwnd.0,
+                    WM_USER,
+                    WPARAM(UserMessage::EnableIme as _),
+                    LPARAM(0),
+                );
             } else {
-                PostMessageW(self.hwnd.0, WM_USER, UserMessage::DisableIme as usize, 0);
+                PostMessageW(
+                    self.hwnd.0,
+                    WM_USER,
+                    WPARAM(UserMessage::DisableIme as _),
+                    LPARAM(0),
+                );
             }
         }
         let mut state = self.state.write().unwrap();
@@ -679,7 +699,7 @@ impl Window {
         state.ime_position.x = position.x;
         state.ime_position.y = position.y;
     }
-    
+
     pub fn is_enabled_ime(&self) -> bool {
         let state = self.state.read().unwrap();
         state.enabled_ime
@@ -687,14 +707,19 @@ impl Window {
 
     pub fn style(&self) -> WindowStyle {
         let state = self.state.read().unwrap();
-        WindowStyle(state.style as DWORD)
+        WindowStyle(state.style)
     }
 
     pub fn set_style(&self, style: impl Style) {
         unsafe {
             let mut state = self.state.write().unwrap();
             state.style = style.value();
-            PostMessageW(self.hwnd.0, WM_USER, UserMessage::SetStyle as usize, 0);
+            PostMessageW(
+                self.hwnd.0,
+                WM_USER,
+                WPARAM(UserMessage::SetStyle as _),
+                LPARAM(0),
+            );
         }
     }
 
@@ -703,14 +728,14 @@ impl Window {
             PostMessageW(
                 self.hwnd.0,
                 WM_USER,
-                UserMessage::AcceptDragFiles as usize,
-                (if enabled { TRUE } else { FALSE }) as LPARAM,
+                WPARAM(UserMessage::AcceptDragFiles as _),
+                LPARAM(if enabled { 1 } else { 0 }),
             );
         }
     }
 
     pub fn raw_handle(&self) -> *mut std::ffi::c_void {
-        self.hwnd.0 as _
+        self.hwnd.0 .0 as _
     }
 }
 
@@ -725,8 +750,8 @@ impl Eq for Window {}
 unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         RawWindowHandle::Windows(WindowsHandle {
-            hinstance: unsafe { GetWindowLongPtrW(self.hwnd.0, GWLP_HINSTANCE) as _ },
-            hwnd: self.hwnd.0 as _,
+            hinstance: unsafe { GetModuleHandleW(PWSTR(std::ptr::null_mut())) as _ },
+            hwnd: self.hwnd.0 .0 as _,
             ..WindowsHandle::empty()
         })
     }

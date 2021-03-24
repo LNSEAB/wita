@@ -20,9 +20,9 @@ impl<T, U> Position<T, U> {
     }
 }
 
-impl<T, U> From<[T; 2]> for Position<T, U> 
+impl<T, U> From<[T; 2]> for Position<T, U>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn from(src: [T; 2]) -> Position<T, U> {
@@ -57,9 +57,9 @@ impl<T, U> Size<T, U> {
     }
 }
 
-impl<T, U> From<[T; 2]> for Size<T, U> 
+impl<T, U> From<[T; 2]> for Size<T, U>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn from(src: [T; 2]) -> Size<T, U> {
@@ -98,7 +98,7 @@ pub type ScreenPosition = Position<i32, Screen>;
 #[inline]
 fn to_logical_value<T>(a: T, dpi: T) -> T
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     a * num::cast(DEFAULT_DPI).unwrap() / dpi
 }
@@ -106,14 +106,14 @@ where
 #[inline]
 fn to_physical_value<T>(a: T, dpi: T) -> T
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
-    a * dpi / num::cast(DEFAULT_DPI).unwrap() 
+    a * dpi / num::cast(DEFAULT_DPI).unwrap()
 }
 
-impl<T> Position<T, Logical> 
+impl<T> Position<T, Logical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     pub fn to_physical(&self, dpi: T) -> Position<T, Physical> {
@@ -124,22 +124,19 @@ where
     }
 }
 
-impl<T> Position<T, Physical> 
+impl<T> Position<T, Physical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     pub fn to_logical(&self, dpi: T) -> Position<T, Logical> {
-        Position::new(
-            to_logical_value(self.x, dpi),
-            to_logical_value(self.y, dpi),
-        )
+        Position::new(to_logical_value(self.x, dpi), to_logical_value(self.y, dpi))
     }
 }
 
-impl<T> Size<T, Logical> 
+impl<T> Size<T, Logical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     pub fn to_physical(&self, dpi: T) -> Size<T, Physical> {
@@ -150,9 +147,9 @@ where
     }
 }
 
-impl<T> Size<T, Physical> 
+impl<T> Size<T, Physical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     pub fn to_logical(&self, dpi: T) -> Size<T, Logical> {
@@ -168,9 +165,9 @@ pub trait ToLogicalPosition<T> {
     fn to_logical(&self, dpi: T) -> Position<T, Logical>;
 }
 
-impl<T> ToLogicalPosition<T> for Position<T, Logical> 
+impl<T> ToLogicalPosition<T> for Position<T, Logical>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn to_logical(&self, _: T) -> Position<T, Logical> {
@@ -178,9 +175,9 @@ where
     }
 }
 
-impl<T> ToLogicalPosition<T> for Position<T, Physical> 
+impl<T> ToLogicalPosition<T> for Position<T, Physical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     fn to_logical(&self, dpi: T) -> Position<T, Logical> {
@@ -193,9 +190,9 @@ pub trait ToLogicalSize<T> {
     fn to_logical(&self, dpi: T) -> Size<T, Logical>;
 }
 
-impl<T> ToLogicalSize<T> for Size<T, Logical> 
+impl<T> ToLogicalSize<T> for Size<T, Logical>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn to_logical(&self, _: T) -> Size<T, Logical> {
@@ -203,9 +200,9 @@ where
     }
 }
 
-impl<T> ToLogicalSize<T> for Size<T, Physical> 
+impl<T> ToLogicalSize<T> for Size<T, Physical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     fn to_logical(&self, dpi: T) -> Size<T, Logical> {
@@ -218,9 +215,9 @@ pub trait ToPhysicalPosition<T> {
     fn to_physical(&self, dpi: T) -> Position<T, Physical>;
 }
 
-impl<T> ToPhysicalPosition<T> for Position<T, Logical> 
+impl<T> ToPhysicalPosition<T> for Position<T, Logical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     fn to_physical(&self, dpi: T) -> Position<T, Physical> {
@@ -230,7 +227,7 @@ where
 
 impl<T> ToPhysicalPosition<T> for Position<T, Physical>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn to_physical(&self, _: T) -> Position<T, Physical> {
@@ -243,9 +240,9 @@ pub trait ToPhysicalSize<T> {
     fn to_physical(&self, dpi: T) -> Size<T, Physical>;
 }
 
-impl<T> ToPhysicalSize<T> for Size<T, Logical> 
+impl<T> ToPhysicalSize<T> for Size<T, Logical>
 where
-    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast
+    T: std::ops::Mul<Output = T> + std::ops::Div<Output = T> + Copy + num::NumCast,
 {
     #[inline]
     fn to_physical(&self, dpi: T) -> Size<T, Physical> {
@@ -255,7 +252,7 @@ where
 
 impl<T> ToPhysicalSize<T> for Size<T, Physical>
 where
-    T: Copy
+    T: Copy,
 {
     #[inline]
     fn to_physical(&self, _: T) -> Size<T, Physical> {

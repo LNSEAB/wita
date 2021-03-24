@@ -1,6 +1,5 @@
+use crate::bindings::windows::win32::{debug::*, system_services::*};
 use std::ptr::{null, null_mut};
-use winapi::um::errhandlingapi::*;
-use winapi::um::winbase::*;
 
 #[doc(hidden)]
 #[macro_export]
@@ -11,7 +10,7 @@ macro_rules! last_error {
             file!(),
             line!(),
             $s,
-            ::winapi::um::errhandlingapi::GetLastError()
+            $crate::bindings::windows::win32::debug::GetLastError()
         )
     };
 }
@@ -20,9 +19,11 @@ fn format_message(code: u32) -> Option<String> {
     unsafe {
         let mut p = null_mut() as *mut u16;
         let len = FormatMessageW(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER
-                | FORMAT_MESSAGE_FROM_SYSTEM
-                | FORMAT_MESSAGE_IGNORE_INSERTS,
+            FORMAT_MESSAGE_OPTIONS(
+                FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_ALLOCATE_BUFFER.0
+                    | FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_FROM_SYSTEM.0
+                    | FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_IGNORE_INSERTS.0,
+            ),
             null(),
             code,
             0,

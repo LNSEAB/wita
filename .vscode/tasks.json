@@ -11,7 +11,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -31,7 +31,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -51,7 +51,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -71,7 +71,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -91,7 +91,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -111,7 +111,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -131,7 +131,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -151,7 +151,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -171,7 +171,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -191,7 +191,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -211,7 +211,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -230,7 +230,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -250,7 +250,7 @@
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
@@ -264,20 +264,19 @@
 			"label": "build inner_window",
 			"type": "cargo",
 			"command": "build",
-			"args": ["--example", "inner_window"],
 			"problemMatcher": [
 				"$rustc"
 			],
 			"group": "build",
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 			},
 			"options": {
 				"shell": {
 					"executable": "cmd.exe",
 					"args": ["/c"]
 				},
-				"cwd": "${workspaceFolder}"
+				"cwd": "${workspaceFolder}/examples/inner_window"
 			}
 		}
 	]

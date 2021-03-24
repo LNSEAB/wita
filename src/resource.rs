@@ -1,7 +1,12 @@
+use crate::bindings::windows::win32::{
+    controls::*, menus_and_resources::*, system_services::*, windows_and_messaging::*,
+};
 use std::path::{Path, PathBuf};
-use winapi::shared::minwindef::*;
-use winapi::shared::windef::*;
-use winapi::um::winuser::*;
+
+#[inline]
+fn make_int_resource(id: u16) -> PWSTR {
+    PWSTR(id as _)
+}
 
 /// Describes a icon.
 #[derive(Clone, Debug)]
@@ -21,9 +26,14 @@ impl Icon {
 fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
     let icon = unsafe {
         match icon {
-            Icon::Resource(id) => {
-                LoadImageW(hinst, MAKEINTRESOURCEW(*id), IMAGE_ICON, cx, cy, LR_SHARED)
-            }
+            Icon::Resource(id) => LoadImageW(
+                hinst,
+                make_int_resource(*id),
+                CopyImage_type::IMAGE_ICON,
+                cx,
+                cy,
+                ImageListLoadImage_uFlags::LR_SHARED,
+            ),
             Icon::File(path) => {
                 let wpath = path
                     .to_string_lossy()
@@ -31,20 +41,23 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
                     .chain(Some(0))
                     .collect::<Vec<_>>();
                 LoadImageW(
-                    std::ptr::null_mut(),
-                    wpath.as_ptr(),
-                    IMAGE_ICON,
+                    HINSTANCE(0),
+                    PWSTR(wpath.as_ptr() as _),
+                    CopyImage_type::IMAGE_ICON,
                     cx,
                     cy,
-                    LR_SHARED | LR_LOADFROMFILE,
+                    ImageListLoadImage_uFlags(
+                        ImageListLoadImage_uFlags::LR_SHARED.0
+                            | ImageListLoadImage_uFlags::LR_LOADFROMFILE.0,
+                    ),
                 )
             }
         }
     };
-    if icon == std::ptr::null_mut() {
+    if icon == HANDLE(0) {
         panic!("cannot load the icon");
     }
-    icon as _
+    HICON(icon.0)
 }
 
 pub(crate) fn load_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
@@ -52,8 +65,8 @@ pub(crate) fn load_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(SM_CXICON),
-            GetSystemMetrics(SM_CYICON),
+            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CXICON),
+            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CYICON),
         )
     }
 }
@@ -63,8 +76,8 @@ pub(crate) fn load_small_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(SM_CXSMICON),
-            GetSystemMetrics(SM_CYSMICON),
+            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CXSMICON),
+            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CYSMICON),
         )
     }
 }

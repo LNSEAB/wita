@@ -1,12 +1,13 @@
 [package]
-name = "wita_icon_resource"
+name = "wita_inner_window"
 version = "0.1.0"
 authors = ["LNSEAB <691752+LNSEAB@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
 wita = { path = "../.." }
-anyhow = "1.0.38"
+windows = "0.6.0"
+anyhow = "1.0.39"
 
 [build-dependencies]
-embed-resource = "1.4.1"
+windows = "0.6.0"

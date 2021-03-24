@@ -2,6 +2,10 @@
 //!
 //! To use, specify `"raw_input"` feature.
 
+use crate::bindings::windows::win32::{
+    file_system::*, hid::*, keyboard_and_mouse_input::*, system_services::*,
+    windows_and_messaging::*, windows_programming::*,
+};
 use crate::context::call_handler;
 use crate::device::*;
 use crate::last_error;
@@ -12,15 +16,21 @@ use std::cell::RefCell;
 use std::mem::size_of;
 use std::ptr::null_mut;
 use std::rc::Rc;
-use winapi::shared::hidpi::*;
-use winapi::shared::hidsdi::*;
-use winapi::shared::hidusage::*;
-use winapi::shared::minwindef::*;
-use winapi::shared::windef::*;
-use winapi::um::fileapi::*;
-use winapi::um::handleapi::*;
-use winapi::um::winnt::*;
-use winapi::um::winuser::*;
+
+const FACILITY_HID_ERROR_CODE: u32 = 0x11;
+
+const fn hidp_error_codes(sev: u32, code: u32) -> NTSTATUS {
+    NTSTATUS(((sev << 28) | (FACILITY_HID_ERROR_CODE << 16) | code) as _)
+}
+
+const HIDP_STATUS_SUCCESS: NTSTATUS = hidp_error_codes(0x0, 0);
+
+const HID_USAGE_PAGE_GENERIC: u16 = 0x01;
+
+const HID_USAGE_GENERIC_MOUSE: u16 = 0x02;
+const HID_USAGE_GENERIC_JOYSTICK: u16 = 0x04;
+const HID_USAGE_GENERIC_GAMEPAD: u16 = 0x05;
+const HID_USAGE_GENERIC_KEYBOARD: u16 = 0x06;
 
 /// An input data value.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -59,17 +69,27 @@ pub struct Limit {
 }
 
 unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
-    dest.clear();
     let mut len = 0;
-    let ret = GetRawInputDeviceInfoW(handle, RIDI_PREPARSEDDATA, null_mut(), &mut len);
-    if (ret as i32) < 0 {
-        last_error!("GetRawInputDeviceInfoW");
+    let ret = GetRawInputDeviceInfoW(
+        handle,
+        GetRawInputDeviceInfo_uiCommand::RIDI_PREPARSEDDATA,
+        null_mut(),
+        &mut len,
+    );
+    if (ret as i32) == -1 {
+        last_error!("get_parsed_data");
         return None;
     }
+    dest.clear();
     dest.resize(len as _, 0);
-    let ret = GetRawInputDeviceInfoW(handle, RIDI_PREPARSEDDATA, dest.as_mut_ptr() as _, &mut len);
-    if (ret as i32) < 0 {
-        last_error!("GetRawInputDeviceInfoW");
+    let ret = GetRawInputDeviceInfoW(
+        handle,
+        GetRawInputDeviceInfo_uiCommand::RIDI_PREPARSEDDATA,
+        dest.as_mut_ptr() as _,
+        &mut len,
+    );
+    if (ret as i32) == -1 {
+        last_error!("get_parsed_data");
         return None;
     }
     Some(())
@@ -77,15 +97,25 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
 
 unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut len = 0;
-    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICENAME, null_mut(), &mut len);
+    let ret = GetRawInputDeviceInfoW(
+        handle,
+        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICENAME,
+        null_mut(),
+        &mut len,
+    );
     if ret != 0 {
-        last_error!("GetRawInputDeviceInfoW");
+        last_error!("get_device_interface");
         return None;
     }
     let mut v = vec![0u16; len as usize + 1];
-    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICENAME, v.as_mut_ptr() as _, &mut len);
+    let ret = GetRawInputDeviceInfoW(
+        handle,
+        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICENAME,
+        v.as_mut_ptr() as _,
+        &mut len,
+    );
     if ret == std::u32::MAX {
-        last_error!("GetRawInputDeviceInfoW");
+        last_error!("get_device_interface");
         return None;
     }
     Some(v)
@@ -93,16 +123,16 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
 
 unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
     let handle = CreateFileW(
-        interface.as_ptr(),
-        0,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        PWSTR(interface.as_ptr() as _),
+        FILE_ACCESS_FLAGS(0),
+        FILE_SHARE_MODE(FILE_SHARE_MODE::FILE_SHARE_READ.0 | FILE_SHARE_MODE::FILE_SHARE_WRITE.0),
         null_mut(),
-        OPEN_EXISTING,
-        0,
-        null_mut(),
+        FILE_CREATION_DISPOSITION::OPEN_EXISTING,
+        FILE_FLAGS_AND_ATTRIBUTES(0),
+        HANDLE(0),
     );
-    if handle.is_null() {
-        last_error!("CreateFileW");
+    if handle == HANDLE(0) {
+        last_error!("get_device_name");
         return None;
     }
     let mut buffer = [0u16; 127];
@@ -123,10 +153,18 @@ unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
 unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
     let mut len = size_of::<RID_DEVICE_INFO>() as u32;
     let mut info = RID_DEVICE_INFO {
-        cbSize: len as _,
-        ..Default::default()
+        cb_size: len as _,
+        dw_type: RID_DEVICE_INFO_dwType(0),
+        anonymous: RID_DEVICE_INFO_0 {
+            keyboard: Default::default(),
+        },
     };
-    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICEINFO, &mut info as *mut _ as _, &mut len);
+    let ret = GetRawInputDeviceInfoW(
+        handle,
+        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICEINFO,
+        &mut info as *mut _ as _,
+        &mut len,
+    );
     if (ret as i32) < 0 {
         last_error!("GetRawInputDeviceInfoW");
         return None;
@@ -219,56 +257,67 @@ pub enum DeviceInfo {
 pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
     unsafe {
         let info = get_raw_input_device_info(device.handle)?;
-        match info.dwType {
-            RIM_TYPEKEYBOARD => {
-                let keyboard = info.u.keyboard();
+        match info.dw_type {
+            RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => {
+                let keyboard = info.anonymous.keyboard;
                 Some(DeviceInfo::Keyboard(KeyboardInfo {
-                    function_num: keyboard.dwNumberOfFunctionKeys,
-                    indicator_num: keyboard.dwNumberOfIndicators,
-                    keys_total: keyboard.dwNumberOfKeysTotal,
+                    function_num: keyboard.dw_number_of_function_keys,
+                    indicator_num: keyboard.dw_number_of_indicators,
+                    keys_total: keyboard.dw_number_of_keys_total,
                 }))
             }
-            RIM_TYPEMOUSE => {
-                let mouse = info.u.mouse();
+            RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => {
+                let mouse = info.anonymous.mouse;
                 Some(DeviceInfo::Mouse(MouseInfo {
-                    button_num: mouse.dwNumberOfButtons,
-                    sample_rate: mouse.dwSampleRate,
-                    has_hwheel: mouse.fHasHorizontalWheel != 0,
+                    button_num: mouse.dw_number_of_buttons,
+                    sample_rate: mouse.dw_sample_rate,
+                    has_hwheel: mouse.f_has_horizontal_wheel.0 != 0,
                 }))
             }
-            RIM_TYPEHID => {
+            RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
                 let mut preparsed = vec![];
                 get_preparsed_data(device.handle, &mut preparsed)?;
-                let p = preparsed.as_mut_ptr() as PHIDP_PREPARSED_DATA;
+                let p = preparsed.as_mut_ptr();
                 let caps = {
                     let mut caps = HIDP_CAPS::default();
-                    let ret = HidP_GetCaps(p, &mut caps);
+                    let ret = HidP_GetCaps(p as _, &mut caps);
                     if ret != HIDP_STATUS_SUCCESS {
                         return None;
                     }
                     caps
                 };
                 let button_caps = {
-                    let mut caps =
-                        vec![HIDP_BUTTON_CAPS::default(); caps.NumberInputButtonCaps as _];
-                    let mut len = caps.len() as u16;
-                    let ret = HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+                    let mut len = caps.number_input_button_caps as u16;
+                    let mut caps = Vec::with_capacity(len as _);
+                    caps.set_len(len as _);
+                    let ret = HidP_GetButtonCaps(
+                        HIDP_REPORT_TYPE::HidP_Input,
+                        caps.as_mut_ptr(),
+                        &mut len,
+                        p as _,
+                    );
                     if ret != HIDP_STATUS_SUCCESS {
                         last_error!("HidP_GetButtonCaps");
                         return None;
                     }
                     caps
                 };
-                let button_num = if button_caps[0].IsRange != 0 {
-                    let range = button_caps[0].u.Range();
-                    (range.UsageMax - range.UsageMin + 1) as u32
+                let button_num = if button_caps[0].is_range != 0 {
+                    let range = button_caps[0].anonymous.range;
+                    (range.usage_max - range.usage_min + 1) as u32
                 } else {
                     return None;
                 };
                 let value_caps = {
-                    let mut len = caps.NumberInputValueCaps;
-                    let mut caps = vec![HIDP_VALUE_CAPS::default(); len as _];
-                    let ret = HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+                    let mut len = caps.number_input_value_caps;
+                    let mut caps = Vec::with_capacity(len as _);
+                    caps.set_len(len as _);
+                    let ret = HidP_GetValueCaps(
+                        HIDP_REPORT_TYPE::HidP_Input,
+                        caps.as_mut_ptr(),
+                        &mut len,
+                        p as _,
+                    );
                     if ret != HIDP_STATUS_SUCCESS {
                         last_error!("HidP_GetValueCaps");
                         return None;
@@ -280,40 +329,40 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     ..Default::default()
                 };
                 for caps in &value_caps {
-                    let usage = if caps.IsRange == 0 {
-                        caps.u.NotRange().Usage
+                    let usage = if caps.is_range == 0 {
+                        caps.anonymous.not_range.usage
                     } else {
                         continue;
                     };
-                    let limit = if caps.LogicalMin > caps.LogicalMax {
-                        match caps.BitSize {
+                    let limit = if caps.logical_min > caps.logical_max {
+                        match caps.bit_size {
                             b if b <= 8 => Limit {
-                                min: Value::U8(caps.LogicalMin as u8),
-                                max: Value::U8(caps.LogicalMax as u8),
+                                min: Value::U8(caps.logical_min as u8),
+                                max: Value::U8(caps.logical_max as u8),
                             },
                             b if b <= 16 => Limit {
-                                min: Value::U16(caps.LogicalMin as u16),
-                                max: Value::U16(caps.LogicalMax as u16),
+                                min: Value::U16(caps.logical_min as u16),
+                                max: Value::U16(caps.logical_max as u16),
                             },
                             b if b <= 32 => Limit {
-                                min: Value::U32(caps.LogicalMin as u32),
-                                max: Value::U32(caps.LogicalMax as u32),
+                                min: Value::U32(caps.logical_min as u32),
+                                max: Value::U32(caps.logical_max as u32),
                             },
                             _ => return None,
                         }
                     } else {
-                        match caps.BitSize {
+                        match caps.bit_size {
                             b if b <= 8 => Limit {
-                                min: Value::I8(caps.LogicalMin as i8),
-                                max: Value::I8(caps.LogicalMax as i8),
+                                min: Value::I8(caps.logical_min as i8),
+                                max: Value::I8(caps.logical_max as i8),
                             },
                             b if b <= 16 => Limit {
-                                min: Value::I16(caps.LogicalMin as i16),
-                                max: Value::I16(caps.LogicalMax as i16),
+                                min: Value::I16(caps.logical_min as i16),
+                                max: Value::I16(caps.logical_max as i16),
                             },
                             b if b <= 32 => Limit {
-                                min: Value::I32(caps.LogicalMin as i32),
-                                max: Value::I32(caps.LogicalMax as i32),
+                                min: Value::I32(caps.logical_min as i32),
+                                max: Value::I32(caps.logical_max as i32),
                             },
                             _ => return None,
                         }
@@ -341,7 +390,7 @@ struct GamePadContext {
     preparsed: Vec<u8>,
     button_caps: Vec<HIDP_BUTTON_CAPS>,
     value_caps: Vec<HIDP_VALUE_CAPS>,
-    usage: Vec<USAGE>,
+    usage: Vec<u16>,
     buttons: Rc<Vec<bool>>,
 }
 
@@ -358,38 +407,44 @@ unsafe fn register_gamepad_context(device: &Device) {
         if get_preparsed_data(device.raw_handle(), &mut preparsed).is_none() {
             return;
         }
-        let p = preparsed.as_mut_ptr() as PHIDP_PREPARSED_DATA;
+        let p = preparsed.as_mut_ptr() as _;
         let mut caps = HIDP_CAPS::default();
         if HidP_GetCaps(p, &mut caps) != HIDP_STATUS_SUCCESS {
             return;
         }
         let button_caps = {
-            let mut len = caps.NumberInputButtonCaps;
-            let mut caps = vec![HIDP_BUTTON_CAPS::default(); len as _];
-            let ret = HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+            let mut len = caps.number_input_button_caps;
+            let mut caps = Vec::with_capacity(len as _);
+            caps.set_len(len as _);
+            let ret =
+                HidP_GetButtonCaps(HIDP_REPORT_TYPE::HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
             caps
         };
         let value_caps = {
-            let mut len = caps.NumberInputValueCaps;
-            let mut caps = vec![HIDP_VALUE_CAPS::default(); len as _];
-            let ret = HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+            let mut len = caps.number_input_value_caps;
+            let mut caps = Vec::with_capacity(len as _);
+            caps.set_len(len as _);
+            let ret =
+                HidP_GetValueCaps(HIDP_REPORT_TYPE::HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
             caps
         };
-        let button_range = button_caps[0].u.Range();
-        let button_num = (button_range.UsageMax - button_range.UsageMin + 1) as usize;
-        let usage_num = HidP_MaxUsageListLength(HidP_Input, button_caps[0].UsagePage, p) as usize;
+        let button_range = button_caps[0].anonymous.range;
+        let button_num = (button_range.usage_max - button_range.usage_min + 1) as usize;
+        let usage_num =
+            HidP_MaxUsageListLength(HIDP_REPORT_TYPE::HidP_Input, button_caps[0].usage_page, p)
+                as usize;
         ctxs.push(GamePadContext {
             device: device.clone(),
             preparsed,
             button_caps,
             value_caps,
-            usage: vec![USAGE::default(); usage_num],
+            usage: vec![0u16; usage_num],
             buttons: Rc::new(vec![false; button_num]),
         });
     });
@@ -406,7 +461,7 @@ pub enum WindowState {
 
 impl From<WPARAM> for WindowState {
     fn from(src: WPARAM) -> WindowState {
-        match src {
+        match src.0 as _ {
             RIM_INPUT => WindowState::Foreground,
             RIM_INPUTSINK => WindowState::Background,
             _ => unreachable!(),
@@ -415,45 +470,47 @@ impl From<WPARAM> for WindowState {
 }
 
 pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
-    let flags = RIDEV_DEVNOTIFY
-        | if state == WindowState::Background {
-            RIDEV_INPUTSINK
-        } else {
-            0
-        };
-    let device = [
+    let flags = RAWINPUTDEVICE_dwFlags(
+        RAWINPUTDEVICE_dwFlags::RIDEV_DEVNOTIFY.0
+            | if state == WindowState::Background {
+                RAWINPUTDEVICE_dwFlags::RIDEV_INPUTSINK.0
+            } else {
+                0
+            },
+    );
+    let mut device = [
         RAWINPUTDEVICE {
-            usUsagePage: HID_USAGE_PAGE_GENERIC,
-            usUsage: HID_USAGE_GENERIC_KEYBOARD,
-            dwFlags: flags,
-            hwndTarget: wnd.raw_handle() as _,
+            us_usage_page: HID_USAGE_PAGE_GENERIC,
+            us_usage: HID_USAGE_GENERIC_KEYBOARD,
+            dw_flags: flags,
+            hwnd_target: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            usUsagePage: HID_USAGE_PAGE_GENERIC,
-            usUsage: HID_USAGE_GENERIC_MOUSE,
-            dwFlags: flags,
-            hwndTarget: wnd.raw_handle() as _,
+            us_usage_page: HID_USAGE_PAGE_GENERIC,
+            us_usage: HID_USAGE_GENERIC_MOUSE,
+            dw_flags: flags,
+            hwnd_target: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            usUsagePage: HID_USAGE_PAGE_GENERIC,
-            usUsage: HID_USAGE_GENERIC_JOYSTICK,
-            dwFlags: flags,
-            hwndTarget: wnd.raw_handle() as _,
+            us_usage_page: HID_USAGE_PAGE_GENERIC,
+            us_usage: HID_USAGE_GENERIC_JOYSTICK,
+            dw_flags: flags,
+            hwnd_target: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            usUsagePage: HID_USAGE_PAGE_GENERIC,
-            usUsage: HID_USAGE_GENERIC_GAMEPAD,
-            dwFlags: flags,
-            hwndTarget: wnd.raw_handle() as _,
+            us_usage_page: HID_USAGE_PAGE_GENERIC,
+            us_usage: HID_USAGE_GENERIC_GAMEPAD,
+            dw_flags: flags,
+            hwnd_target: HWND(wnd.raw_handle() as _),
         },
     ];
     unsafe {
         let ret = RegisterRawInputDevices(
-            device.as_ptr(),
+            device.as_mut_ptr(),
             device.len() as _,
             size_of::<RAWINPUTDEVICE>() as _,
         );
-        if ret == 0 {
+        if ret == BOOL(0) {
             last_error!("RegisterRawInputDevices");
         }
         let device_list = get_device_list();
@@ -473,15 +530,16 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
 
 unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
     let info = get_raw_input_device_info(handle)?;
-    match info.dwType {
-        RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
-        RIM_TYPEMOUSE => Some(DeviceType::Mouse),
-        RIM_TYPEHID => {
-            let hid = info.u.hid();
-            if hid.usUsagePage != HID_USAGE_PAGE_GENERIC {
+    match info.dw_type {
+        RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
+        RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => Some(DeviceType::Mouse),
+        RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
+            let hid = info.anonymous.hid;
+            if hid.us_usage_page != HID_USAGE_PAGE_GENERIC {
                 return None;
             }
-            if hid.usUsage != HID_USAGE_GENERIC_JOYSTICK && hid.usUsage != HID_USAGE_GENERIC_GAMEPAD
+            if hid.us_usage != HID_USAGE_GENERIC_JOYSTICK
+                && hid.us_usage != HID_USAGE_GENERIC_GAMEPAD
             {
                 return None;
             }
@@ -500,7 +558,7 @@ pub fn get_device_list() -> Vec<Device> {
             &mut len,
             size_of::<RAWINPUTDEVICELIST>() as _,
         );
-        if (ret as i32) < 0 {
+        if (ret as i32) == -1 {
             last_error!("GetRawInputDeviceList");
             return vec![];
         }
@@ -510,7 +568,7 @@ pub fn get_device_list() -> Vec<Device> {
             &mut len,
             size_of::<RAWINPUTDEVICELIST>() as _,
         );
-        if (ret as i32) < 0 {
+        if (ret as i32) == -1 {
             last_error!("GetRawInputDeviceList");
             return vec![];
         }
@@ -518,9 +576,9 @@ pub fn get_device_list() -> Vec<Device> {
             .iter()
             .filter_map(|device| {
                 Some(Device {
-                    handle: device.hDevice,
-                    ty: get_device_type(device.hDevice)?,
-                    name: get_device_interface(device.hDevice).and_then(|i| get_device_name(&i)),
+                    handle: device.h_device,
+                    ty: get_device_type(device.h_device)?,
+                    name: get_device_interface(device.h_device).and_then(|i| get_device_name(&i)),
                 })
             })
             .collect::<Vec<_>>()
@@ -544,21 +602,22 @@ pub struct MouseButtonStates(u16);
 
 impl MouseButtonStates {
     pub fn contains(&self, button: MouseButton, state: KeyState) -> bool {
+        let value = self.0 as u32;
         match state {
             KeyState::Pressed => match button {
-                MouseButton::Left => (self.0 & RI_MOUSE_LEFT_BUTTON_DOWN) != 0,
-                MouseButton::Right => (self.0 & RI_MOUSE_RIGHT_BUTTON_DOWN) != 0,
-                MouseButton::Middle => (self.0 & RI_MOUSE_MIDDLE_BUTTON_DOWN) != 0,
-                MouseButton::Ex(0) => (self.0 & RI_MOUSE_BUTTON_4_DOWN) != 0,
-                MouseButton::Ex(1) => (self.0 & RI_MOUSE_BUTTON_5_DOWN) != 0,
+                MouseButton::Left => (value & RI_MOUSE_LEFT_BUTTON_DOWN) != 0,
+                MouseButton::Right => (value & RI_MOUSE_RIGHT_BUTTON_DOWN) != 0,
+                MouseButton::Middle => (value & RI_MOUSE_MIDDLE_BUTTON_DOWN) != 0,
+                MouseButton::Ex(0) => (value & RI_MOUSE_BUTTON_4_DOWN) != 0,
+                MouseButton::Ex(1) => (value & RI_MOUSE_BUTTON_5_DOWN) != 0,
                 _ => false,
             },
             KeyState::Released => match button {
-                MouseButton::Left => (self.0 & RI_MOUSE_LEFT_BUTTON_UP) != 0,
-                MouseButton::Right => (self.0 & RI_MOUSE_RIGHT_BUTTON_UP) != 0,
-                MouseButton::Middle => (self.0 & RI_MOUSE_MIDDLE_BUTTON_UP) != 0,
-                MouseButton::Ex(0) => (self.0 & RI_MOUSE_BUTTON_4_UP) != 0,
-                MouseButton::Ex(1) => (self.0 & RI_MOUSE_BUTTON_5_UP) != 0,
+                MouseButton::Left => (value & RI_MOUSE_LEFT_BUTTON_UP) != 0,
+                MouseButton::Right => (value & RI_MOUSE_RIGHT_BUTTON_UP) != 0,
+                MouseButton::Middle => (value & RI_MOUSE_MIDDLE_BUTTON_UP) != 0,
+                MouseButton::Ex(0) => (value & RI_MOUSE_BUTTON_4_UP) != 0,
+                MouseButton::Ex(1) => (value & RI_MOUSE_BUTTON_5_UP) != 0,
                 _ => false,
             },
         }
@@ -614,17 +673,17 @@ pub enum InputData {
 }
 
 unsafe fn input_data_keyboard(input: &mut RAWINPUT) -> Option<InputData> {
-    let keyboard = input.data.keyboard();
+    let keyboard = input.data.keyboard;
     let code = KeyCode {
-        vkey: as_virtual_key(keyboard.VKey as _),
-        scan_code: ScanCode(keyboard.MakeCode as _),
+        vkey: as_virtual_key(keyboard.vkey as _),
+        scan_code: ScanCode(keyboard.make_code as _),
     };
-    let state = if (keyboard.Flags & RI_KEY_MAKE as u16) != 0 {
-        KeyState::Pressed
-    } else {
+    let state = if (keyboard.flags & (RI_KEY_BREAK as u16)) != 0 {
         KeyState::Released
+    } else {
+        KeyState::Pressed
     };
-    let handle = input.header.hDevice;
+    let handle = input.header.h_device;
     Some(InputData::Keyboard(KeyboardData {
         device: DEVICE_LIST.with(|dl| {
             dl.borrow()
@@ -634,32 +693,31 @@ unsafe fn input_data_keyboard(input: &mut RAWINPUT) -> Option<InputData> {
         })?,
         code,
         state,
-        extra: keyboard.ExtraInformation,
+        extra: keyboard.extra_information,
     }))
 }
 
 unsafe fn input_data_mouse(input: &mut RAWINPUT) -> Option<InputData> {
-    let mouse = input.data.mouse();
-    let position = if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE) != 0 {
+    let mouse = input.data.mouse;
+    let position = if (mouse.us_flags & (MOUSE_MOVE_ABSOLUTE as u16)) != 0 {
         MousePosition::Absolute { x: 0, y: 0 }
     } else {
         MousePosition::Relative {
-            x: mouse.lLastX,
-            y: mouse.lLastY,
+            x: mouse.l_lastx,
+            y: mouse.l_lasty,
         }
     };
-    let wheel = if (mouse.usButtonFlags & RI_MOUSE_WHEEL) != 0 {
-        Some(mouse.usButtonData as i16)
+    let wheel = if (mouse.anonymous.anonymous.us_button_flags & (RI_MOUSE_WHEEL as u16)) != 0 {
+        Some(mouse.anonymous.anonymous.us_button_data as i16)
     } else {
         None
     };
-    // RI_MOUSE_HWHEEL is missing in winapi-rs
-    let hwheel = if (mouse.usButtonFlags & 0x0800) != 0 {
-        Some(mouse.usButtonData as i16)
+    let hwheel = if (mouse.anonymous.anonymous.us_button_flags & (RI_MOUSE_HWHEEL as u16)) != 0 {
+        Some(mouse.anonymous.anonymous.us_button_data as i16)
     } else {
         None
     };
-    let handle = input.header.hDevice;
+    let handle = input.header.h_device;
     Some(InputData::Mouse(MouseData {
         device: DEVICE_LIST.with(|dl| {
             dl.borrow()
@@ -670,15 +728,15 @@ unsafe fn input_data_mouse(input: &mut RAWINPUT) -> Option<InputData> {
         position,
         wheel,
         hwheel,
-        buttons: MouseButtonStates(mouse.usButtonFlags),
-        extra: mouse.ulExtraInformation,
+        buttons: MouseButtonStates(mouse.anonymous.anonymous.us_button_flags),
+        extra: mouse.ul_extra_information,
     }))
 }
 
 unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
     GAMEPAD_CONTEXTS.with(|ctxs| {
-        let handle = input.header.hDevice;
-        let hid = input.data.hid_mut();
+        let handle = input.header.h_device;
+        let hid = &mut input.data.hid;
         let mut ctxs = ctxs.borrow_mut();
         let ctx = ctxs
             .iter_mut()
@@ -687,14 +745,14 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let p = ctx.preparsed.as_mut_ptr() as _;
         let mut len = ctx.usage.len() as _;
         let ret = HidP_GetUsages(
-            HidP_Input,
-            ctx.button_caps[0].UsagePage,
+            HIDP_REPORT_TYPE::HidP_Input,
+            ctx.button_caps[0].usage_page,
             0,
             ctx.usage.as_mut_ptr(),
             &mut len,
             p,
-            hid.bRawData.as_mut_ptr() as _,
-            hid.dwSizeHid,
+            PSTR(hid.b_raw_data.as_mut_ptr()),
+            hid.dw_size_hid,
         );
         if ret != HIDP_STATUS_SUCCESS {
             return None;
@@ -704,8 +762,13 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
             for btn in buttons.iter_mut() {
                 *btn = false;
             }
+            let range = if ctx.button_caps[0].is_range != 0 {
+                ctx.button_caps[0].anonymous.range.usage_min
+            } else {
+                ctx.button_caps[0].anonymous.not_range.usage
+            };
             for i in 0..(len as usize) {
-                buttons[(ctx.usage[i] - ctx.button_caps[0].u.Range().UsageMin) as usize] = true;
+                buttons[(ctx.usage[i] - range) as usize] = true;
             }
         }
         let mut x = 0;
@@ -717,20 +780,20 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let mut hat = 0;
         for caps in &ctx.value_caps {
             let mut value = 0;
-            let usage = if caps.IsRange != 0 {
-                caps.u.Range().UsageMin
+            let usage = if caps.is_range != 0 {
+                caps.anonymous.range.usage_min
             } else {
-                caps.u.NotRange().Usage
+                caps.anonymous.not_range.usage
             };
             let ret = HidP_GetUsageValue(
-                HidP_Input,
-                caps.UsagePage,
+                HIDP_REPORT_TYPE::HidP_Input,
+                caps.usage_page,
                 0,
                 usage,
                 &mut value,
                 p,
-                hid.bRawData.as_mut_ptr() as _,
-                hid.dwSizeHid,
+                PSTR(hid.b_raw_data.as_mut_ptr()),
+                hid.dw_size_hid,
             );
             if ret != HIDP_STATUS_SUCCESS {
                 continue;
@@ -750,7 +813,7 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
                 }
             }
         }
-        let handle = input.header.hDevice;
+        let handle = input.header.h_device;
         Some(InputData::GamePad(GamePadData {
             device: DEVICE_LIST.with(|dl| {
                 dl.borrow()
@@ -780,10 +843,16 @@ where
     T: EventHandler + 'static,
 {
     const HEADER_SIZE: u32 = size_of::<RAWINPUTHEADER>() as u32;
-    let input_handle = lparam as HRAWINPUT;
+    let input_handle = HRAWINPUT(lparam.0);
     let data = RAW_INPUT_DATA.with(|data| {
         let mut len = 0;
-        let ret = GetRawInputData(input_handle, RID_INPUT, null_mut(), &mut len, HEADER_SIZE);
+        let ret = GetRawInputData(
+            input_handle,
+            GetRawInputData_uiCommandFlags::RID_INPUT,
+            null_mut(),
+            &mut len,
+            HEADER_SIZE,
+        );
         if (ret as i32) < 0 {
             last_error!("GetRawInputData");
             return None;
@@ -793,7 +862,7 @@ where
         v.resize(len as _, 0);
         let ret = GetRawInputData(
             input_handle,
-            RID_INPUT,
+            GetRawInputData_uiCommandFlags::RID_INPUT,
             v.as_mut_ptr() as _,
             &mut len,
             HEADER_SIZE,
@@ -810,10 +879,10 @@ where
     let data = data.unwrap();
     call_handler(move |eh: &mut T, _| {
         let input = &mut *(data.borrow_mut().as_mut_ptr() as *mut RAWINPUT);
-        let data = match input.header.dwType {
-            RIM_TYPEKEYBOARD => input_data_keyboard(input),
-            RIM_TYPEMOUSE => input_data_mouse(input),
-            RIM_TYPEHID => input_data_gamepad(input),
+        let data = match input.header.dw_type {
+            0 => input_data_mouse(input),
+            1 => input_data_keyboard(input),
+            2 => input_data_gamepad(input),
             _ => unreachable!(),
         };
         if let Some(data) = data {
@@ -839,13 +908,13 @@ pub(crate) unsafe fn wm_input_device_change<T>(
 where
     T: EventHandler + 'static,
 {
-    let handle = lparam as HANDLE;
-    match wparam as u32 {
+    let handle = HANDLE(lparam.0 as _);
+    match wparam.0 as u32 {
         GIDC_ARRIVAL => {
             let ty = get_device_type(handle);
             let name = get_device_interface(handle).and_then(|i| get_device_name(&i));
             if ty.is_none() || name.is_none() {
-                return 0;
+                return LRESULT(0);
             }
             let device = Device {
                 handle,
@@ -890,5 +959,5 @@ where
         }
         _ => unreachable!(),
     }
-    0
+    LRESULT(0)
 }

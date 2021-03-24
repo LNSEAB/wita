@@ -1,6 +1,7 @@
+use crate::bindings::windows::win32::{
+    display_devices::*, gdi::*, system_services::*, windows_and_messaging::*,
+};
 use crate::geometry::*;
-use winapi::shared::{minwindef::*, windef::*};
-use winapi::um::winuser::*;
 
 /// Describes monitor info.
 #[derive(Clone, Debug)]
@@ -17,38 +18,40 @@ impl PartialEq for Monitor {
     }
 }
 
-unsafe extern "system" fn get_monitors_proc(
+extern "system" fn get_monitors_proc(
     hmonitor: HMONITOR,
     _: HDC,
-    rc: LPRECT,
+    rc: *mut RECT,
     lparam: LPARAM,
 ) -> BOOL {
-    let v = &mut *(lparam as *mut Vec<Monitor>);
-    let rc = &*rc;
-    let mut info = MONITORINFO {
-        cbSize: std::mem::size_of::<MONITORINFO>() as u32,
-        ..Default::default()
-    };
-    GetMonitorInfoW(hmonitor, &mut info);
-    v.push(Monitor {
-        hmonitor,
-        position: ScreenPosition::new(rc.left, rc.top),
-        size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
-        is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
-    });
-    TRUE
+    unsafe {
+        let v = &mut *(lparam.0 as *mut Vec<Monitor>);
+        let rc = &*rc;
+        let mut info = MONITORINFO {
+            cb_size: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        GetMonitorInfoW(hmonitor, &mut info);
+        v.push(Monitor {
+            hmonitor,
+            position: ScreenPosition::new(rc.left, rc.top),
+            size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
+            is_primary: (info.dw_flags & MONITORINFOF_PRIMARY) != 0,
+        });
+        BOOL(1)
+    }
 }
 
 /// Return monitors info.
 pub fn get_monitors() -> Vec<Monitor> {
     unsafe {
-        let len = GetSystemMetrics(SM_CMONITORS) as usize;
+        let len = GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CMONITORS) as usize;
         let mut v = Vec::with_capacity(len);
         EnumDisplayMonitors(
-            std::ptr::null_mut(),
+            HDC(0),
             std::ptr::null_mut(),
             Some(get_monitors_proc),
-            (&mut v) as *mut Vec<Monitor> as LPARAM,
+            LPARAM((&mut v) as *mut Vec<Monitor> as _),
         );
         v
     }
@@ -62,24 +65,24 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
                 x: point.x,
                 y: point.y,
             },
-            MONITOR_DEFAULTTONULL,
+            MonitorFrom_dwFlags::MONITOR_DEFAULTTONULL,
         );
-        if hmonitor == std::ptr::null_mut() {
+        if hmonitor == HMONITOR(0) {
             return None;
         }
         let mut info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            cb_size: std::mem::size_of::<MONITORINFO>() as u32,
             ..Default::default()
         };
         GetMonitorInfoW(hmonitor, &mut info);
         Some(Monitor {
             hmonitor,
-            position: ScreenPosition::new(info.rcMonitor.left, info.rcMonitor.top),
+            position: ScreenPosition::new(info.rc_monitor.left, info.rc_monitor.top),
             size: PhysicalSize::new(
-                (info.rcMonitor.right - info.rcMonitor.left) as u32,
-                (info.rcMonitor.bottom - info.rcMonitor.top) as u32,
+                (info.rc_monitor.right - info.rc_monitor.left) as u32,
+                (info.rc_monitor.bottom - info.rc_monitor.top) as u32,
             ),
-            is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
+            is_primary: (info.dw_flags & MONITORINFOF_PRIMARY) != 0,
         })
     }
 }
@@ -91,7 +94,10 @@ mod tests {
     fn monitors_len() {
         let monitors = get_monitors();
         unsafe {
-            assert_eq!(monitors.len(), GetSystemMetrics(SM_CMONITORS) as usize);
+            assert_eq!(
+                monitors.len(),
+                GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CMONITORS) as usize
+            );
         }
     }
 }
