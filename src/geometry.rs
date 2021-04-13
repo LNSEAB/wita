@@ -20,6 +20,19 @@ impl<T, U> Position<T, U> {
     }
 }
 
+impl<T, U> Position<T, U>
+where
+    T: num::NumCast
+{
+    #[inline]
+    pub fn cast<R>(self) -> Position<R, U> 
+    where
+        R: num::NumCast
+    {
+        Position::new(num::cast(self.x).unwrap(), num::cast(self.y).unwrap())
+    }
+}
+
 impl<T, U> From<[T; 2]> for Position<T, U>
 where
     T: Copy,
@@ -54,6 +67,19 @@ impl<T, U> Size<T, U> {
             height,
             _u: std::marker::PhantomData,
         }
+    }
+}
+
+impl<T, U> Size<T, U>
+where
+    T: num::NumCast
+{
+    #[inline]
+    pub fn cast<R>(self) -> Size<R, U> 
+    where
+        R: num::NumCast
+    {
+        Size::new(num::cast(self.width).unwrap(), num::cast(self.height).unwrap())
     }
 }
 
@@ -263,6 +289,22 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    #[test]
+    fn cast_position() {
+        let src = LogicalPosition::new(128.0, 256.0);
+        let dst = src.cast::<i32>();
+        assert!(dst.x == 128);
+        assert!(dst.y == 256);
+    }
+
+    #[test]
+    fn cast_size() {
+        let src = LogicalSize::new(128.0, 256.0);
+        let dst = src.cast::<i32>();
+        assert!(dst.width == 128);
+        assert!(dst.height == 256);
+    }
 
     #[test]
     fn logical_to_logical_position() {
