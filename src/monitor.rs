@@ -1,5 +1,5 @@
-use crate::bindings::windows::win32::{
-    display_devices::*, gdi::*, system_services::*, windows_and_messaging::*,
+use crate::bindings::Windows::Win32::{
+    DisplayDevices::*, Gdi::*, SystemServices::*, WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 
@@ -28,7 +28,7 @@ extern "system" fn get_monitors_proc(
         let v = &mut *(lparam.0 as *mut Vec<Monitor>);
         let rc = &*rc;
         let mut info = MONITORINFO {
-            cb_size: std::mem::size_of::<MONITORINFO>() as u32,
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
             ..Default::default()
         };
         GetMonitorInfoW(hmonitor, &mut info);
@@ -36,7 +36,7 @@ extern "system" fn get_monitors_proc(
             hmonitor,
             position: ScreenPosition::new(rc.left, rc.top),
             size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
-            is_primary: (info.dw_flags & MONITORINFOF_PRIMARY) != 0,
+            is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
         });
         BOOL(1)
     }
@@ -71,18 +71,18 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
             return None;
         }
         let mut info = MONITORINFO {
-            cb_size: std::mem::size_of::<MONITORINFO>() as u32,
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
             ..Default::default()
         };
         GetMonitorInfoW(hmonitor, &mut info);
         Some(Monitor {
             hmonitor,
-            position: ScreenPosition::new(info.rc_monitor.left, info.rc_monitor.top),
+            position: ScreenPosition::new(info.rcMonitor.left, info.rcMonitor.top),
             size: PhysicalSize::new(
-                (info.rc_monitor.right - info.rc_monitor.left) as u32,
-                (info.rc_monitor.bottom - info.rc_monitor.top) as u32,
+                (info.rcMonitor.right - info.rcMonitor.left) as u32,
+                (info.rcMonitor.bottom - info.rcMonitor.top) as u32,
             ),
-            is_primary: (info.dw_flags & MONITORINFOF_PRIMARY) != 0,
+            is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
         })
     }
 }

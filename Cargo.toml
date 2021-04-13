@@ -20,15 +20,15 @@ all-featurse = true
 raw_input = []
 
 [dependencies]
-serde = { version = "1.0.123", optional = true, features = ["derive"] }
-num = "0.3.1"
+serde = { version = "1.0.125", optional = true, features = ["derive"] }
+num = "0.4.0"
 raw-window-handle = "0.3.3"
 log = "0.4.14"
-windows = "0.6.0"
+windows = "0.8.0"
 
 [dev-dependencies]
-anyhow = "1.0.38"
-windows = "0.6.0"
+anyhow = "1.0.40"
+windows = "0.8.0"
 
 [build-dependencies]
-windows = "0.6.0"
+windows = "0.8.0"

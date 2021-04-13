@@ -1,6 +1,6 @@
-use crate::bindings::windows::win32::{
-    display_devices::*, gdi::*, hi_dpi::*, menus_and_resources::*, shell::*, system_services::*,
-    windows_and_messaging::*,
+use crate::bindings::Windows::Win32::{
+    DisplayDevices::*, Gdi::*, HiDpi::*, MenusAndResources::*, Shell::*, SystemServices::*,
+    WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -31,7 +31,7 @@ pub trait Style {
     fn value(&self) -> u32;
 
     fn is_borderless(&self) -> bool {
-        self.value() == WINDOWS_STYLE::WS_POPUP.0
+        self.value() == WINDOW_STYLE::WS_POPUP.0
     }
 }
 
@@ -40,7 +40,7 @@ pub struct BorderlessStyle;
 
 impl Style for BorderlessStyle {
     fn value(&self) -> u32 {
-        WINDOWS_STYLE::WS_POPUP.0
+        WINDOW_STYLE::WS_POPUP.0
     }
 }
 
@@ -50,12 +50,12 @@ pub struct WindowStyle(u32);
 impl WindowStyle {
     pub fn default() -> Self {
         Self(
-            WINDOWS_STYLE::WS_OVERLAPPED.0
-                | WINDOWS_STYLE::WS_CAPTION.0
-                | WINDOWS_STYLE::WS_SYSMENU.0
-                | WINDOWS_STYLE::WS_THICKFRAME.0
-                | WINDOWS_STYLE::WS_MINIMIZEBOX.0
-                | WINDOWS_STYLE::WS_MAXIMIZEBOX.0,
+            WINDOW_STYLE::WS_OVERLAPPED.0
+                | WINDOW_STYLE::WS_CAPTION.0
+                | WINDOW_STYLE::WS_SYSMENU.0
+                | WINDOW_STYLE::WS_THICKFRAME.0
+                | WINDOW_STYLE::WS_MINIMIZEBOX.0
+                | WINDOW_STYLE::WS_MAXIMIZEBOX.0,
         )
     }
 
@@ -65,33 +65,33 @@ impl WindowStyle {
 
     pub fn resizable(mut self, resizable: bool) -> Self {
         if resizable {
-            self.0 |= WINDOWS_STYLE::WS_THICKFRAME.0;
+            self.0 |= WINDOW_STYLE::WS_THICKFRAME.0;
         } else {
-            self.0 &= !WINDOWS_STYLE::WS_THICKFRAME.0;
+            self.0 &= !WINDOW_STYLE::WS_THICKFRAME.0;
         }
         self
     }
 
     pub fn has_minimize_box(mut self, has_minimize_box: bool) -> Self {
         if has_minimize_box {
-            self.0 |= WINDOWS_STYLE::WS_MINIMIZEBOX.0;
+            self.0 |= WINDOW_STYLE::WS_MINIMIZEBOX.0;
         } else {
-            self.0 &= !WINDOWS_STYLE::WS_MINIMIZEBOX.0;
+            self.0 &= !WINDOW_STYLE::WS_MINIMIZEBOX.0;
         }
         self
     }
 
     pub fn has_maximize_box(mut self, has_maximize_box: bool) -> Self {
         if has_maximize_box {
-            self.0 |= WINDOWS_STYLE::WS_MAXIMIZEBOX.0;
+            self.0 |= WINDOW_STYLE::WS_MAXIMIZEBOX.0;
         } else {
-            self.0 &= !WINDOWS_STYLE::WS_MAXIMIZEBOX.0;
+            self.0 &= !WINDOW_STYLE::WS_MAXIMIZEBOX.0;
         }
         self
     }
 
     pub fn is_borderless(&self) -> bool {
-        self.value() == WINDOWS_STYLE::WS_POPUP.0
+        self.value() == WINDOW_STYLE::WS_POPUP.0
     }
 }
 
@@ -120,18 +120,18 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
     unsafe {
         let class_name = window_class_name();
         let wc = WNDCLASSEXW {
-            cb_size: std::mem::size_of::<WNDCLASSEXW>() as _,
+            cbSize: std::mem::size_of::<WNDCLASSEXW>() as _,
             style: WNDCLASS_STYLES(WNDCLASS_STYLES::CS_VREDRAW.0 | WNDCLASS_STYLES::CS_HREDRAW.0),
-            lpfn_wnd_proc: Some(window_proc::<T>),
-            cb_cls_extra: 0,
-            cb_wnd_extra: 0,
-            h_instance: HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut()))),
-            h_icon: HICON(0),
-            h_cursor: LoadCursorW(HINSTANCE(0), PWSTR(IDC_ARROW as _)),
-            hbr_background: HBRUSH(GetStockObject(GetStockObject_iFlags::WHITE_BRUSH).0),
-            lpsz_menu_name: PWSTR(std::ptr::null_mut()),
-            lpsz_class_name: PWSTR(class_name.as_ptr() as _),
-            h_icon_sm: HICON(0),
+            lpfnWndProc: Some(window_proc::<T>),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut()))),
+            hIcon: HICON::NULL,
+            hCursor: LoadCursorW(HINSTANCE(0), IDC_ARROW),
+            hbrBackground: HBRUSH(GetStockObject(GetStockObject_iFlags::WHITE_BRUSH).0),
+            lpszMenuName: PWSTR(std::ptr::null_mut()),
+            lpszClassName: PWSTR(class_name.as_ptr() as _),
+            hIconSm: HICON::NULL,
         };
         if RegisterClassExW(&wc) == 0 {
             panic!("cannot register the window class");
@@ -310,16 +310,16 @@ where
             let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
             let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
             let hwnd = CreateWindowExW(
-                WINDOWS_EX_STYLE(0),
+                WINDOW_EX_STYLE(0),
                 PWSTR(class_name.as_ptr() as _),
                 PWSTR(title.as_ptr() as _),
-                WINDOWS_STYLE(self.style),
+                WINDOW_STYLE(self.style),
                 self.position.x,
                 self.position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
-                HWND(0),
-                HMENU(0),
+                HWND::NULL,
+                HMENU::NULL,
                 hinst,
                 std::ptr::null_mut(),
             );
@@ -474,19 +474,19 @@ where
             let dpi = self.parent.dpi();
             let position = self.position.to_physical(dpi as i32);
             let size = self.size.to_physical(dpi);
-            let rc = adjust_window_rect(size, WINDOWS_STYLE::WS_CHILD.0, 0, dpi);
+            let rc = adjust_window_rect(size, WINDOW_STYLE::WS_CHILD.0, 0, dpi);
             let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
             let hwnd = CreateWindowExW(
-                WINDOWS_EX_STYLE(0),
+                WINDOW_EX_STYLE(0),
                 PWSTR(class_name.as_ptr() as _),
                 PWSTR(std::ptr::null_mut() as _),
-                WINDOWS_STYLE::WS_CHILD,
+                WINDOW_STYLE::WS_CHILD,
                 position.x,
                 position.y,
                 (rc.right - rc.left) as i32,
                 (rc.bottom - rc.top) as i32,
                 HWND(self.parent.raw_handle() as _),
-                HMENU(0),
+                HMENU::NULL,
                 hinst,
                 std::ptr::null_mut(),
             );
@@ -497,7 +497,7 @@ where
                 hwnd,
                 WindowState {
                     title: String::new(),
-                    style: WINDOWS_STYLE::WS_CHILD.0,
+                    style: WINDOW_STYLE::WS_CHILD.0,
                     set_position: (position.x, position.y),
                     set_inner_size: size,
                     enabled_ime: self.parent.is_enabled_ime(),

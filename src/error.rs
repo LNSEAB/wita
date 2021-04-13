@@ -1,4 +1,4 @@
-use crate::bindings::windows::win32::{debug::*, system_services::*};
+use crate::bindings::Windows::Win32::{Debug::*, SystemServices::*};
 use std::ptr::{null, null_mut};
 
 #[doc(hidden)]
@@ -10,7 +10,7 @@ macro_rules! last_error {
             file!(),
             line!(),
             $s,
-            $crate::bindings::windows::win32::debug::GetLastError()
+            $crate::bindings::Windows::Win32::Debug::GetLastError()
         )
     };
 }

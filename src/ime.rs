@@ -1,6 +1,6 @@
 //! An IME composition string and a candidate list
 
-use crate::bindings::windows::win32::{display_devices::*, intl::*, windows_and_messaging::*};
+use crate::bindings::Windows::Win32::{DisplayDevices::*, Intl::*, WindowsAndMessaging::*};
 use crate::geometry::*;
 
 /// Describes composition character attributes.
@@ -163,9 +163,9 @@ impl Imc {
                 y: position.y,
             };
             let mut form = COMPOSITIONFORM {
-                dw_style: CFS_POINT,
-                pt_current_pos: pt,
-                rc_area: RECT::default(),
+                dwStyle: CFS_POINT,
+                ptCurrentPos: pt,
+                rcArea: RECT::default(),
             };
             ImmSetCompositionWindow(self.himc, &mut form);
         }
@@ -182,18 +182,18 @@ impl Imc {
                 y: position.y,
             };
             let mut form = CANDIDATEFORM {
-                dw_style: CFS_CANDIDATEPOS,
-                dw_index: 0,
-                pt_current_pos: pt,
-                rc_area: RECT::default(),
+                dwStyle: CFS_CANDIDATEPOS,
+                dwIndex: 0,
+                ptCurrentPos: pt,
+                rcArea: RECT::default(),
             };
             ImmSetCandidateWindow(self.himc, &mut form);
             if !enable_exclude_rect {
                 let mut form = CANDIDATEFORM {
-                    dw_style: CFS_EXCLUDE,
-                    dw_index: 0,
-                    pt_current_pos: pt,
-                    rc_area: RECT {
+                    dwStyle: CFS_EXCLUDE,
+                    dwIndex: 0,
+                    ptCurrentPos: pt,
+                    rcArea: RECT {
                         left: pt.x,
                         top: pt.y,
                         right: pt.x,
@@ -277,16 +277,16 @@ impl Imc {
                 return None;
             }
             let obj = &*(buf.as_ptr() as *const CANDIDATELIST);
-            let mut list: Vec<String> = Vec::with_capacity(obj.dw_count as usize);
-            for i in 0..(obj.dw_count as usize) {
+            let mut list: Vec<String> = Vec::with_capacity(obj.dwCount as usize);
+            for i in 0..(obj.dwCount as usize) {
                 let offset =
-                    std::slice::from_raw_parts(&obj.dw_offset as *const u32, obj.dw_count as usize);
+                    std::slice::from_raw_parts(&obj.dwOffset as *const u32, obj.dwCount as usize);
                 let p = buf.as_ptr().offset(offset[i] as isize) as *const u16;
                 let len = (0..isize::MAX).position(|i| *p.offset(i) == 0).unwrap();
                 let slice = std::slice::from_raw_parts(p, len);
                 list.push(String::from_utf16_lossy(slice));
             }
-            Some(CandidateList::new(list, obj.dw_selection as usize))
+            Some(CandidateList::new(list, obj.dwSelection as usize))
         }
     }
 }

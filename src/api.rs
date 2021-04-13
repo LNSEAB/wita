@@ -1,5 +1,5 @@
-use crate::bindings::windows::win32::{
-    display_devices::*, gdi::*, hi_dpi::*, system_services::*, windows_and_messaging::*,
+use crate::bindings::Windows::Win32::{
+    DisplayDevices::*, Gdi::*, HiDpi::*, SystemServices::*, WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 use std::sync::Once;

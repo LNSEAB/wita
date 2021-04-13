@@ -1,6 +1,6 @@
-use crate::bindings::windows::win32::{
-    controls::*, display_devices::*, gdi::*, hi_dpi::*, intl::*, keyboard_and_mouse_input::*,
-    shell::*, system_services::*, windows_and_messaging::*,
+use crate::bindings::Windows::Win32::{
+    Controls::*, DisplayDevices::*, Gdi::*, HiDpi::*, Intl::*, KeyboardAndMouseInput::*,
+    Shell::*, SystemServices::*, WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -154,10 +154,10 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     update_buttons(&mut state.mouse_buttons, wparam);
                     if state.entered_window.is_none() {
                         TrackMouseEvent(&mut TRACKMOUSEEVENT {
-                            cb_size: std::mem::size_of::<TRACKMOUSEEVENT>() as _,
-                            dw_flags: TRACKMOUSEEVENT_dwFlags::TME_LEAVE,
-                            hwnd_track: hwnd,
-                            dw_hover_time: 0,
+                            cbSize: std::mem::size_of::<TRACKMOUSEEVENT>() as _,
+                            dwFlags: TRACKMOUSEEVENT_dwFlags::TME_LEAVE,
+                            hwndTrack: hwnd,
+                            dwHoverTime: 0,
                         });
                         state.entered_window = Some(window.clone());
                         eh.cursor_entered(
@@ -411,8 +411,8 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                 );
                 let rc = adjust_window_rect(
                     size,
-                    GetWindowLongW(hwnd, SetWindowLong_nIndex::GWL_STYLE) as _,
-                    GetWindowLongW(hwnd, SetWindowLong_nIndex::GWL_EXSTYLE) as _,
+                    GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE) as _,
+                    GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_EXSTYLE) as _,
                     next_dpi as u32,
                 );
                 let mut ret = (lparam.0 as *mut SIZE).as_mut().unwrap();
@@ -507,8 +507,8 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                         let state = handle.state.read().unwrap();
                         let rc = adjust_window_rect(
                             state.set_inner_size,
-                            GetWindowLongW(hwnd, SetWindowLong_nIndex::GWL_STYLE) as _,
-                            GetWindowLongW(hwnd, SetWindowLong_nIndex::GWL_EXSTYLE) as _,
+                            GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE) as _,
+                            GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_EXSTYLE) as _,
                             GetDpiForWindow(hwnd),
                         );
                         SetWindowPos(
@@ -542,7 +542,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             GetDpiForWindow(hwnd),
                         );
-                        SetWindowLongW(hwnd, SetWindowLong_nIndex::GWL_STYLE, style as _);
+                        SetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE, style as _);
                         SetWindowPos(
                             hwnd,
                             HWND(0),

@@ -1,8 +1,8 @@
 fn main() {
     windows::build!(
-        windows::win32::windows_and_messaging::*,
-        windows::win32::hi_dpi::*,
-        windows::win32::gdi::{
+        Windows::Win32::WindowsAndMessaging::*,
+        Windows::Win32::HiDpi::*,
+        Windows::Win32::Gdi::{
             MonitorFromPoint,
             GetMonitorInfoW,
             EnumDisplayMonitors,
@@ -11,42 +11,42 @@ fn main() {
             GetStockObject,
             RedrawWindow,
         },
-        windows::win32::keyboard_and_mouse_input::*,
-        windows::win32::system_services::{
+        Windows::Win32::KeyboardAndMouseInput::*,
+        Windows::Win32::SystemServices::{
             BOOL,
             HINSTANCE,
             LocalFree,
             GetModuleHandleW,
         },
-        windows::win32::display_devices::{
+        Windows::Win32::DisplayDevices::{
             POINT,
             RECT,
         },
-        windows::win32::debug::{
+        Windows::Win32::Debug::{
             FormatMessageW,
             GetLastError,
             FORMAT_MESSAGE_OPTIONS,
         },
-        windows::win32::intl::*,
-        windows::win32::shell::{
+        Windows::Win32::Intl::*,
+        Windows::Win32::Shell::{
             DragAcceptFiles,
             DragQueryFileW,
             DragQueryPoint,
             DragFinish,
         },
-        windows::win32::menus_and_resources::{
+        Windows::Win32::MenusAndResources::{
             HICON,
         },
-        windows::win32::controls::{
+        Windows::Win32::Controls::{
             ImageListLoadImage_uFlags,
             WM_MOUSELEAVE,
         },
-        windows::win32::windows_programming::{
+        Windows::Win32::WindowsProgramming::{
             CloseHandle,
         },
-        windows::win32::file_system::{
+        Windows::Win32::FileSystem::{
             CreateFileW,
         },
-        windows::win32::hid::*,
+        Windows::Win32::Hid::*,
     );
 }

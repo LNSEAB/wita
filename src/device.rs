@@ -1,4 +1,4 @@
-use crate::bindings::windows::win32::{keyboard_and_mouse_input::*, windows_and_messaging::*};
+use crate::bindings::Windows::Win32::{KeyboardAndMouseInput::*, WindowsAndMessaging::*};
 use crate::geometry::*;
 #[cfg(feature = "serde")]
 use serde::{de::*, *};

@@ -2,9 +2,9 @@
 //!
 //! To use, specify `"raw_input"` feature.
 
-use crate::bindings::windows::win32::{
-    file_system::*, hid::*, keyboard_and_mouse_input::*, system_services::*,
-    windows_and_messaging::*, windows_programming::*,
+use crate::bindings::Windows::Win32::{
+    FileSystem::*, Hid::*, KeyboardAndMouseInput::*, SystemServices::*,
+    WindowsAndMessaging::*, WindowsProgramming::*,
 };
 use crate::context::call_handler;
 use crate::device::*;
@@ -153,9 +153,9 @@ unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
 unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
     let mut len = size_of::<RID_DEVICE_INFO>() as u32;
     let mut info = RID_DEVICE_INFO {
-        cb_size: len as _,
-        dw_type: RID_DEVICE_INFO_dwType(0),
-        anonymous: RID_DEVICE_INFO_0 {
+        cbSize: len as _,
+        dwType: RID_DEVICE_INFO_dwType(0),
+        Anonymous: RID_DEVICE_INFO_0 {
             keyboard: Default::default(),
         },
     };
@@ -257,21 +257,21 @@ pub enum DeviceInfo {
 pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
     unsafe {
         let info = get_raw_input_device_info(device.handle)?;
-        match info.dw_type {
+        match info.dwType {
             RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => {
-                let keyboard = info.anonymous.keyboard;
+                let keyboard = info.Anonymous.keyboard;
                 Some(DeviceInfo::Keyboard(KeyboardInfo {
-                    function_num: keyboard.dw_number_of_function_keys,
-                    indicator_num: keyboard.dw_number_of_indicators,
-                    keys_total: keyboard.dw_number_of_keys_total,
+                    function_num: keyboard.dwNumberOfFunctionKeys,
+                    indicator_num: keyboard.dwNumberOfIndicators,
+                    keys_total: keyboard.dwNumberOfKeysTotal,
                 }))
             }
             RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => {
-                let mouse = info.anonymous.mouse;
+                let mouse = info.Anonymous.mouse;
                 Some(DeviceInfo::Mouse(MouseInfo {
-                    button_num: mouse.dw_number_of_buttons,
-                    sample_rate: mouse.dw_sample_rate,
-                    has_hwheel: mouse.f_has_horizontal_wheel.0 != 0,
+                    button_num: mouse.dwNumberOfButtons,
+                    sample_rate: mouse.dwSampleRate,
+                    has_hwheel: mouse.fHasHorizontalWheel.0 != 0,
                 }))
             }
             RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
@@ -287,7 +287,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     caps
                 };
                 let button_caps = {
-                    let mut len = caps.number_input_button_caps as u16;
+                    let mut len = caps.NumberInputButtonCaps as u16;
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
                     let ret = HidP_GetButtonCaps(
@@ -302,14 +302,14 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     }
                     caps
                 };
-                let button_num = if button_caps[0].is_range != 0 {
-                    let range = button_caps[0].anonymous.range;
-                    (range.usage_max - range.usage_min + 1) as u32
+                let button_num = if button_caps[0].IsRange != 0 {
+                    let range = button_caps[0].Anonymous.Range;
+                    (range.UsageMax - range.UsageMin + 1) as u32
                 } else {
                     return None;
                 };
                 let value_caps = {
-                    let mut len = caps.number_input_value_caps;
+                    let mut len = caps.NumberInputValueCaps;
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
                     let ret = HidP_GetValueCaps(
@@ -329,40 +329,40 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     ..Default::default()
                 };
                 for caps in &value_caps {
-                    let usage = if caps.is_range == 0 {
-                        caps.anonymous.not_range.usage
+                    let usage = if caps.IsRange == 0 {
+                        caps.Anonymous.NotRange.Usage
                     } else {
                         continue;
                     };
-                    let limit = if caps.logical_min > caps.logical_max {
-                        match caps.bit_size {
+                    let limit = if caps.LogicalMin > caps.LogicalMax {
+                        match caps.BitSize {
                             b if b <= 8 => Limit {
-                                min: Value::U8(caps.logical_min as u8),
-                                max: Value::U8(caps.logical_max as u8),
+                                min: Value::U8(caps.LogicalMin as u8),
+                                max: Value::U8(caps.LogicalMax as u8),
                             },
                             b if b <= 16 => Limit {
-                                min: Value::U16(caps.logical_min as u16),
-                                max: Value::U16(caps.logical_max as u16),
+                                min: Value::U16(caps.LogicalMin as u16),
+                                max: Value::U16(caps.LogicalMax as u16),
                             },
                             b if b <= 32 => Limit {
-                                min: Value::U32(caps.logical_min as u32),
-                                max: Value::U32(caps.logical_max as u32),
+                                min: Value::U32(caps.LogicalMin as u32),
+                                max: Value::U32(caps.LogicalMax as u32),
                             },
                             _ => return None,
                         }
                     } else {
-                        match caps.bit_size {
+                        match caps.BitSize {
                             b if b <= 8 => Limit {
-                                min: Value::I8(caps.logical_min as i8),
-                                max: Value::I8(caps.logical_max as i8),
+                                min: Value::I8(caps.LogicalMin as i8),
+                                max: Value::I8(caps.LogicalMax as i8),
                             },
                             b if b <= 16 => Limit {
-                                min: Value::I16(caps.logical_min as i16),
-                                max: Value::I16(caps.logical_max as i16),
+                                min: Value::I16(caps.LogicalMin as i16),
+                                max: Value::I16(caps.LogicalMax as i16),
                             },
                             b if b <= 32 => Limit {
-                                min: Value::I32(caps.logical_min as i32),
-                                max: Value::I32(caps.logical_max as i32),
+                                min: Value::I32(caps.LogicalMin as i32),
+                                max: Value::I32(caps.LogicalMax as i32),
                             },
                             _ => return None,
                         }
@@ -413,7 +413,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             return;
         }
         let button_caps = {
-            let mut len = caps.number_input_button_caps;
+            let mut len = caps.NumberInputButtonCaps;
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
             let ret =
@@ -424,7 +424,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             caps
         };
         let value_caps = {
-            let mut len = caps.number_input_value_caps;
+            let mut len = caps.NumberInputValueCaps;
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
             let ret =
@@ -434,10 +434,10 @@ unsafe fn register_gamepad_context(device: &Device) {
             }
             caps
         };
-        let button_range = button_caps[0].anonymous.range;
-        let button_num = (button_range.usage_max - button_range.usage_min + 1) as usize;
+        let button_range = button_caps[0].Anonymous.Range;
+        let button_num = (button_range.UsageMax - button_range.UsageMin + 1) as usize;
         let usage_num =
-            HidP_MaxUsageListLength(HIDP_REPORT_TYPE::HidP_Input, button_caps[0].usage_page, p)
+            HidP_MaxUsageListLength(HIDP_REPORT_TYPE::HidP_Input, button_caps[0].UsagePage, p)
                 as usize;
         ctxs.push(GamePadContext {
             device: device.clone(),
@@ -480,28 +480,28 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
     );
     let mut device = [
         RAWINPUTDEVICE {
-            us_usage_page: HID_USAGE_PAGE_GENERIC,
-            us_usage: HID_USAGE_GENERIC_KEYBOARD,
-            dw_flags: flags,
-            hwnd_target: HWND(wnd.raw_handle() as _),
+            usUsagePage: HID_USAGE_PAGE_GENERIC,
+            usUsage: HID_USAGE_GENERIC_KEYBOARD,
+            dwFlags: flags,
+            hwndTarget: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            us_usage_page: HID_USAGE_PAGE_GENERIC,
-            us_usage: HID_USAGE_GENERIC_MOUSE,
-            dw_flags: flags,
-            hwnd_target: HWND(wnd.raw_handle() as _),
+            usUsagePage: HID_USAGE_PAGE_GENERIC,
+            usUsage: HID_USAGE_GENERIC_MOUSE,
+            dwFlags: flags,
+            hwndTarget: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            us_usage_page: HID_USAGE_PAGE_GENERIC,
-            us_usage: HID_USAGE_GENERIC_JOYSTICK,
-            dw_flags: flags,
-            hwnd_target: HWND(wnd.raw_handle() as _),
+            usUsagePage: HID_USAGE_PAGE_GENERIC,
+            usUsage: HID_USAGE_GENERIC_JOYSTICK,
+            dwFlags: flags,
+            hwndTarget: HWND(wnd.raw_handle() as _),
         },
         RAWINPUTDEVICE {
-            us_usage_page: HID_USAGE_PAGE_GENERIC,
-            us_usage: HID_USAGE_GENERIC_GAMEPAD,
-            dw_flags: flags,
-            hwnd_target: HWND(wnd.raw_handle() as _),
+            usUsagePage: HID_USAGE_PAGE_GENERIC,
+            usUsage: HID_USAGE_GENERIC_GAMEPAD,
+            dwFlags: flags,
+            hwndTarget: HWND(wnd.raw_handle() as _),
         },
     ];
     unsafe {
@@ -530,16 +530,16 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
 
 unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
     let info = get_raw_input_device_info(handle)?;
-    match info.dw_type {
+    match info.dwType {
         RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
         RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => Some(DeviceType::Mouse),
         RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
-            let hid = info.anonymous.hid;
-            if hid.us_usage_page != HID_USAGE_PAGE_GENERIC {
+            let hid = info.Anonymous.hid;
+            if hid.usUsagePage != HID_USAGE_PAGE_GENERIC {
                 return None;
             }
-            if hid.us_usage != HID_USAGE_GENERIC_JOYSTICK
-                && hid.us_usage != HID_USAGE_GENERIC_GAMEPAD
+            if hid.usUsage != HID_USAGE_GENERIC_JOYSTICK
+                && hid.usUsage != HID_USAGE_GENERIC_GAMEPAD
             {
                 return None;
             }
@@ -576,9 +576,9 @@ pub fn get_device_list() -> Vec<Device> {
             .iter()
             .filter_map(|device| {
                 Some(Device {
-                    handle: device.h_device,
-                    ty: get_device_type(device.h_device)?,
-                    name: get_device_interface(device.h_device).and_then(|i| get_device_name(&i)),
+                    handle: device.hDevice,
+                    ty: get_device_type(device.hDevice)?,
+                    name: get_device_interface(device.hDevice).and_then(|i| get_device_name(&i)),
                 })
             })
             .collect::<Vec<_>>()
@@ -675,15 +675,15 @@ pub enum InputData {
 unsafe fn input_data_keyboard(input: &mut RAWINPUT) -> Option<InputData> {
     let keyboard = input.data.keyboard;
     let code = KeyCode {
-        vkey: as_virtual_key(keyboard.vkey as _),
-        scan_code: ScanCode(keyboard.make_code as _),
+        vkey: as_virtual_key(keyboard.VKey as _),
+        scan_code: ScanCode(keyboard.MakeCode as _),
     };
-    let state = if (keyboard.flags & (RI_KEY_BREAK as u16)) != 0 {
+    let state = if (keyboard.Flags & (RI_KEY_BREAK as u16)) != 0 {
         KeyState::Released
     } else {
         KeyState::Pressed
     };
-    let handle = input.header.h_device;
+    let handle = input.header.hDevice;
     Some(InputData::Keyboard(KeyboardData {
         device: DEVICE_LIST.with(|dl| {
             dl.borrow()
@@ -693,31 +693,31 @@ unsafe fn input_data_keyboard(input: &mut RAWINPUT) -> Option<InputData> {
         })?,
         code,
         state,
-        extra: keyboard.extra_information,
+        extra: keyboard.ExtraInformation,
     }))
 }
 
 unsafe fn input_data_mouse(input: &mut RAWINPUT) -> Option<InputData> {
     let mouse = input.data.mouse;
-    let position = if (mouse.us_flags & (MOUSE_MOVE_ABSOLUTE as u16)) != 0 {
+    let position = if (mouse.usFlags & (MOUSE_MOVE_ABSOLUTE as u16)) != 0 {
         MousePosition::Absolute { x: 0, y: 0 }
     } else {
         MousePosition::Relative {
-            x: mouse.l_lastx,
-            y: mouse.l_lasty,
+            x: mouse.lLastX,
+            y: mouse.lLastY,
         }
     };
-    let wheel = if (mouse.anonymous.anonymous.us_button_flags & (RI_MOUSE_WHEEL as u16)) != 0 {
-        Some(mouse.anonymous.anonymous.us_button_data as i16)
+    let wheel = if (mouse.Anonymous.Anonymous.usButtonFlags & (RI_MOUSE_WHEEL as u16)) != 0 {
+        Some(mouse.Anonymous.Anonymous.usButtonData as i16)
     } else {
         None
     };
-    let hwheel = if (mouse.anonymous.anonymous.us_button_flags & (RI_MOUSE_HWHEEL as u16)) != 0 {
-        Some(mouse.anonymous.anonymous.us_button_data as i16)
+    let hwheel = if (mouse.Anonymous.Anonymous.usButtonFlags & (RI_MOUSE_HWHEEL as u16)) != 0 {
+        Some(mouse.Anonymous.Anonymous.usButtonData as i16)
     } else {
         None
     };
-    let handle = input.header.h_device;
+    let handle = input.header.hDevice;
     Some(InputData::Mouse(MouseData {
         device: DEVICE_LIST.with(|dl| {
             dl.borrow()
@@ -728,14 +728,14 @@ unsafe fn input_data_mouse(input: &mut RAWINPUT) -> Option<InputData> {
         position,
         wheel,
         hwheel,
-        buttons: MouseButtonStates(mouse.anonymous.anonymous.us_button_flags),
-        extra: mouse.ul_extra_information,
+        buttons: MouseButtonStates(mouse.Anonymous.Anonymous.usButtonFlags),
+        extra: mouse.ulExtraInformation,
     }))
 }
 
 unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
     GAMEPAD_CONTEXTS.with(|ctxs| {
-        let handle = input.header.h_device;
+        let handle = input.header.hDevice;
         let hid = &mut input.data.hid;
         let mut ctxs = ctxs.borrow_mut();
         let ctx = ctxs
@@ -746,13 +746,13 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let mut len = ctx.usage.len() as _;
         let ret = HidP_GetUsages(
             HIDP_REPORT_TYPE::HidP_Input,
-            ctx.button_caps[0].usage_page,
+            ctx.button_caps[0].UsagePage,
             0,
             ctx.usage.as_mut_ptr(),
             &mut len,
             p,
-            PSTR(hid.b_raw_data.as_mut_ptr()),
-            hid.dw_size_hid,
+            PSTR(hid.bRawData.as_mut_ptr()),
+            hid.dwSizeHid,
         );
         if ret != HIDP_STATUS_SUCCESS {
             return None;
@@ -762,10 +762,10 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
             for btn in buttons.iter_mut() {
                 *btn = false;
             }
-            let range = if ctx.button_caps[0].is_range != 0 {
-                ctx.button_caps[0].anonymous.range.usage_min
+            let range = if ctx.button_caps[0].IsRange != 0 {
+                ctx.button_caps[0].Anonymous.Range.UsageMin
             } else {
-                ctx.button_caps[0].anonymous.not_range.usage
+                ctx.button_caps[0].Anonymous.NotRange.Usage
             };
             for i in 0..(len as usize) {
                 buttons[(ctx.usage[i] - range) as usize] = true;
@@ -780,20 +780,20 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let mut hat = 0;
         for caps in &ctx.value_caps {
             let mut value = 0;
-            let usage = if caps.is_range != 0 {
-                caps.anonymous.range.usage_min
+            let usage = if caps.IsRange != 0 {
+                caps.Anonymous.Range.UsageMin
             } else {
-                caps.anonymous.not_range.usage
+                caps.Anonymous.NotRange.Usage
             };
             let ret = HidP_GetUsageValue(
                 HIDP_REPORT_TYPE::HidP_Input,
-                caps.usage_page,
+                caps.UsagePage,
                 0,
                 usage,
                 &mut value,
                 p,
-                PSTR(hid.b_raw_data.as_mut_ptr()),
-                hid.dw_size_hid,
+                PSTR(hid.bRawData.as_mut_ptr()),
+                hid.dwSizeHid,
             );
             if ret != HIDP_STATUS_SUCCESS {
                 continue;
@@ -813,7 +813,7 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
                 }
             }
         }
-        let handle = input.header.h_device;
+        let handle = input.header.hDevice;
         Some(InputData::GamePad(GamePadData {
             device: DEVICE_LIST.with(|dl| {
                 dl.borrow()
@@ -879,7 +879,7 @@ where
     let data = data.unwrap();
     call_handler(move |eh: &mut T, _| {
         let input = &mut *(data.borrow_mut().as_mut_ptr() as *mut RAWINPUT);
-        let data = match input.header.dw_type {
+        let data = match input.header.dwType {
             0 => input_data_mouse(input),
             1 => input_data_keyboard(input),
             2 => input_data_gamepad(input),

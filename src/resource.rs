@@ -1,5 +1,5 @@
-use crate::bindings::windows::win32::{
-    controls::*, menus_and_resources::*, system_services::*, windows_and_messaging::*,
+use crate::bindings::Windows::Win32::{
+    Controls::*, MenusAndResources::*, SystemServices::*, WindowsAndMessaging::*,
 };
 use std::path::{Path, PathBuf};
 

@@ -96,7 +96,7 @@ pub use monitor::*;
 pub use resource::*;
 pub use window::*;
 
-use bindings::windows::win32::{system_services::*, windows_and_messaging::*};
+use bindings::Windows::Win32::{SystemServices::*, WindowsAndMessaging::*};
 use context::*;
 
 /// The value is an unit in logical coordinates.
