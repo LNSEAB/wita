@@ -22,12 +22,12 @@ impl<T, U> Position<T, U> {
 
 impl<T, U> Position<T, U>
 where
-    T: num::NumCast
+    T: num::NumCast,
 {
     #[inline]
-    pub fn cast<R>(self) -> Position<R, U> 
+    pub fn cast<R>(self) -> Position<R, U>
     where
-        R: num::NumCast
+        R: num::NumCast,
     {
         Position::new(num::cast(self.x).unwrap(), num::cast(self.y).unwrap())
     }
@@ -72,14 +72,17 @@ impl<T, U> Size<T, U> {
 
 impl<T, U> Size<T, U>
 where
-    T: num::NumCast
+    T: num::NumCast,
 {
     #[inline]
-    pub fn cast<R>(self) -> Size<R, U> 
+    pub fn cast<R>(self) -> Size<R, U>
     where
-        R: num::NumCast
+        R: num::NumCast,
     {
-        Size::new(num::cast(self.width).unwrap(), num::cast(self.height).unwrap())
+        Size::new(
+            num::cast(self.width).unwrap(),
+            num::cast(self.height).unwrap(),
+        )
     }
 }
 
@@ -289,7 +292,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn cast_position() {
         let src = LogicalPosition::new(128.0, 256.0);

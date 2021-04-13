@@ -1,6 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    Controls::*, DisplayDevices::*, Gdi::*, HiDpi::*, Intl::*, KeyboardAndMouseInput::*,
-    Shell::*, SystemServices::*, WindowsAndMessaging::*,
+    Controls::*, DisplayDevices::*, Gdi::*, HiDpi::*, Intl::*, KeyboardAndMouseInput::*, Shell::*,
+    SystemServices::*, WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;

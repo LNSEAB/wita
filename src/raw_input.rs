@@ -3,8 +3,8 @@
 //! To use, specify `"raw_input"` feature.
 
 use crate::bindings::Windows::Win32::{
-    FileSystem::*, Hid::*, KeyboardAndMouseInput::*, SystemServices::*,
-    WindowsAndMessaging::*, WindowsProgramming::*,
+    FileSystem::*, Hid::*, KeyboardAndMouseInput::*, SystemServices::*, WindowsAndMessaging::*,
+    WindowsProgramming::*,
 };
 use crate::context::call_handler;
 use crate::device::*;
@@ -538,8 +538,7 @@ unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
             if hid.usUsagePage != HID_USAGE_PAGE_GENERIC {
                 return None;
             }
-            if hid.usUsage != HID_USAGE_GENERIC_JOYSTICK
-                && hid.usUsage != HID_USAGE_GENERIC_GAMEPAD
+            if hid.usUsage != HID_USAGE_GENERIC_JOYSTICK && hid.usUsage != HID_USAGE_GENERIC_GAMEPAD
             {
                 return None;
             }
