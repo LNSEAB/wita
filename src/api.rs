@@ -11,7 +11,7 @@ pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
         GetDpiForMonitor(
             MonitorFromPoint(
                 POINT { x: pt.x, y: pt.y },
-                MonitorFrom_dwFlags::MONITOR_DEFAULTTOPRIMARY,
+                MONITOR_FROM_FLAGS::MONITOR_DEFAULTTOPRIMARY,
             ),
             MONITOR_DPI_TYPE::MDT_DEFAULT,
             &mut dpi_x,

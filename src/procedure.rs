@@ -155,7 +155,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     if state.entered_window.is_none() {
                         TrackMouseEvent(&mut TRACKMOUSEEVENT {
                             cbSize: std::mem::size_of::<TRACKMOUSEEVENT>() as _,
-                            dwFlags: TRACKMOUSEEVENT_dwFlags::TME_LEAVE,
+                            dwFlags: TRACKMOUSEEVENT_FLAGS::TME_LEAVE,
                             hwndTrack: hwnd,
                             dwHoverTime: 0,
                         });
@@ -367,7 +367,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_WINDOWPOSCHANGED => {
                 let pos = &*(lparam.0 as *const WINDOWPOS);
-                if pos.flags.0 & SetWindowPos_uFlags::SWP_NOMOVE.0 == 0 {
+                if pos.flags.0 & SET_WINDOW_POS_FLAGS::SWP_NOMOVE.0 == 0 {
                     call_handler(|eh: &mut T, _| {
                         eh.moved(handle, ScreenPosition::new(pos.x, pos.y))
                     });
@@ -393,9 +393,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     rc.top,
                     rc.right - rc.left,
                     rc.bottom - rc.top,
-                    SetWindowPos_uFlags(
-                        SetWindowPos_uFlags::SWP_NOZORDER.0 | SetWindowPos_uFlags::SWP_NOACTIVATE.0,
-                    ),
+                    SET_WINDOW_POS_FLAGS::SWP_NOZORDER | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
                 );
                 call_handler(|eh: &mut T, _| eh.dpi_changed(handle));
                 LRESULT(0)
@@ -496,11 +494,9 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             state.set_position.1,
                             0,
                             0,
-                            SetWindowPos_uFlags(
-                                SetWindowPos_uFlags::SWP_NOZORDER.0
-                                    | SetWindowPos_uFlags::SWP_NOSIZE.0
-                                    | SetWindowPos_uFlags::SWP_NOACTIVATE.0,
-                            ),
+                            SET_WINDOW_POS_FLAGS::SWP_NOZORDER
+                                | SET_WINDOW_POS_FLAGS::SWP_NOSIZE
+                                | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
@@ -518,11 +514,9 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SetWindowPos_uFlags(
-                                SetWindowPos_uFlags::SWP_NOZORDER.0
-                                    | SetWindowPos_uFlags::SWP_NOMOVE.0
-                                    | SetWindowPos_uFlags::SWP_NOACTIVATE.0,
-                            ),
+                            SET_WINDOW_POS_FLAGS::SWP_NOZORDER
+                                | SET_WINDOW_POS_FLAGS::SWP_NOMOVE
+                                | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::EnableIme as usize => {
@@ -550,11 +544,9 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SetWindowPos_uFlags(
-                                SetWindowPos_uFlags::SWP_NOMOVE.0
-                                    | SetWindowPos_uFlags::SWP_NOZORDER.0
-                                    | SetWindowPos_uFlags::SWP_FRAMECHANGED.0,
-                            ),
+                            SET_WINDOW_POS_FLAGS::SWP_NOMOVE
+                                | SET_WINDOW_POS_FLAGS::SWP_NOZORDER
+                                | SET_WINDOW_POS_FLAGS::SWP_FRAMECHANGED,
                         );
                         ShowWindow(hwnd, SHOW_WINDOW_CMD::SW_SHOW);
                     }

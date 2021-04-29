@@ -72,7 +72,7 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
     let mut len = 0;
     let ret = GetRawInputDeviceInfoW(
         handle,
-        GetRawInputDeviceInfo_uiCommand::RIDI_PREPARSEDDATA,
+        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_PREPARSEDDATA,
         null_mut(),
         &mut len,
     );
@@ -84,7 +84,7 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
     dest.resize(len as _, 0);
     let ret = GetRawInputDeviceInfoW(
         handle,
-        GetRawInputDeviceInfo_uiCommand::RIDI_PREPARSEDDATA,
+        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_PREPARSEDDATA,
         dest.as_mut_ptr() as _,
         &mut len,
     );
@@ -99,7 +99,7 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut len = 0;
     let ret = GetRawInputDeviceInfoW(
         handle,
-        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICENAME,
+        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICENAME,
         null_mut(),
         &mut len,
     );
@@ -110,7 +110,7 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut v = vec![0u16; len as usize + 1];
     let ret = GetRawInputDeviceInfoW(
         handle,
-        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICENAME,
+        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICENAME,
         v.as_mut_ptr() as _,
         &mut len,
     );
@@ -154,14 +154,14 @@ unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
     let mut len = size_of::<RID_DEVICE_INFO>() as u32;
     let mut info = RID_DEVICE_INFO {
         cbSize: len as _,
-        dwType: RID_DEVICE_INFO_dwType(0),
+        dwType: RID_DEVICE_INFO_TYPE(0),
         Anonymous: RID_DEVICE_INFO_0 {
             keyboard: Default::default(),
         },
     };
     let ret = GetRawInputDeviceInfoW(
         handle,
-        GetRawInputDeviceInfo_uiCommand::RIDI_DEVICEINFO,
+        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICEINFO,
         &mut info as *mut _ as _,
         &mut len,
     );
@@ -258,7 +258,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
     unsafe {
         let info = get_raw_input_device_info(device.handle)?;
         match info.dwType {
-            RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => {
+            RID_DEVICE_INFO_TYPE::RIM_TYPEKEYBOARD => {
                 let keyboard = info.Anonymous.keyboard;
                 Some(DeviceInfo::Keyboard(KeyboardInfo {
                     function_num: keyboard.dwNumberOfFunctionKeys,
@@ -266,7 +266,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     keys_total: keyboard.dwNumberOfKeysTotal,
                 }))
             }
-            RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => {
+            RID_DEVICE_INFO_TYPE::RIM_TYPEMOUSE => {
                 let mouse = info.Anonymous.mouse;
                 Some(DeviceInfo::Mouse(MouseInfo {
                     button_num: mouse.dwNumberOfButtons,
@@ -274,7 +274,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     has_hwheel: mouse.fHasHorizontalWheel.0 != 0,
                 }))
             }
-            RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
+            RID_DEVICE_INFO_TYPE::RIM_TYPEHID => {
                 let mut preparsed = vec![];
                 get_preparsed_data(device.handle, &mut preparsed)?;
                 let p = preparsed.as_mut_ptr();
@@ -470,10 +470,10 @@ impl From<WPARAM> for WindowState {
 }
 
 pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
-    let flags = RAWINPUTDEVICE_dwFlags(
-        RAWINPUTDEVICE_dwFlags::RIDEV_DEVNOTIFY.0
+    let flags = RAWINPUTDEVICE_FLAGS(
+        RAWINPUTDEVICE_FLAGS::RIDEV_DEVNOTIFY.0
             | if state == WindowState::Background {
-                RAWINPUTDEVICE_dwFlags::RIDEV_INPUTSINK.0
+                RAWINPUTDEVICE_FLAGS::RIDEV_INPUTSINK.0
             } else {
                 0
             },
@@ -531,9 +531,9 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
 unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
     let info = get_raw_input_device_info(handle)?;
     match info.dwType {
-        RID_DEVICE_INFO_dwType::RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
-        RID_DEVICE_INFO_dwType::RIM_TYPEMOUSE => Some(DeviceType::Mouse),
-        RID_DEVICE_INFO_dwType::RIM_TYPEHID => {
+        RID_DEVICE_INFO_TYPE::RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
+        RID_DEVICE_INFO_TYPE::RIM_TYPEMOUSE => Some(DeviceType::Mouse),
+        RID_DEVICE_INFO_TYPE::RIM_TYPEHID => {
             let hid = info.Anonymous.hid;
             if hid.usUsagePage != HID_USAGE_PAGE_GENERIC {
                 return None;
@@ -847,7 +847,7 @@ where
         let mut len = 0;
         let ret = GetRawInputData(
             input_handle,
-            GetRawInputData_uiCommandFlags::RID_INPUT,
+            RAW_INPUT_DATA_COMMAND_FLAGS::RID_INPUT,
             null_mut(),
             &mut len,
             HEADER_SIZE,
@@ -861,7 +861,7 @@ where
         v.resize(len as _, 0);
         let ret = GetRawInputData(
             input_handle,
-            GetRawInputData_uiCommandFlags::RID_INPUT,
+            RAW_INPUT_DATA_COMMAND_FLAGS::RID_INPUT,
             v.as_mut_ptr() as _,
             &mut len,
             HEADER_SIZE,

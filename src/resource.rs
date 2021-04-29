@@ -29,10 +29,10 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
             Icon::Resource(id) => LoadImageW(
                 hinst,
                 make_int_resource(*id),
-                CopyImage_type::IMAGE_ICON,
+                GDI_IMAGE_TYPE::IMAGE_ICON,
                 cx,
                 cy,
-                ImageListLoadImage_uFlags::LR_SHARED,
+                IMAGE_FLAGS::LR_SHARED,
             ),
             Icon::File(path) => {
                 let wpath = path
@@ -43,12 +43,12 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
                 LoadImageW(
                     HINSTANCE(0),
                     PWSTR(wpath.as_ptr() as _),
-                    CopyImage_type::IMAGE_ICON,
+                    GDI_IMAGE_TYPE::IMAGE_ICON,
                     cx,
                     cy,
-                    ImageListLoadImage_uFlags(
-                        ImageListLoadImage_uFlags::LR_SHARED.0
-                            | ImageListLoadImage_uFlags::LR_LOADFROMFILE.0,
+                    IMAGE_FLAGS(
+                        IMAGE_FLAGS::LR_SHARED.0
+                            | IMAGE_FLAGS::LR_LOADFROMFILE.0,
                     ),
                 )
             }
@@ -65,8 +65,8 @@ pub(crate) fn load_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CXICON),
-            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CYICON),
+            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CXICON),
+            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CYICON),
         )
     }
 }
@@ -76,8 +76,8 @@ pub(crate) fn load_small_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CXSMICON),
-            GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CYSMICON),
+            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CXSMICON),
+            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CYSMICON),
         )
     }
 }

@@ -128,7 +128,7 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
             hInstance: HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut()))),
             hIcon: HICON::NULL,
             hCursor: LoadCursorW(HINSTANCE(0), IDC_ARROW),
-            hbrBackground: HBRUSH(GetStockObject(GetStockObject_iFlags::WHITE_BRUSH).0),
+            hbrBackground: HBRUSH(GetStockObject(GET_STOCK_OBJECT_FLAGS::WHITE_BRUSH).0),
             lpszMenuName: PWSTR(std::ptr::null_mut()),
             lpszClassName: PWSTR(class_name.as_ptr() as _),
             hIconSm: HICON::NULL,

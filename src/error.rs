@@ -10,7 +10,7 @@ macro_rules! last_error {
             file!(),
             line!(),
             $s,
-            $crate::bindings::Windows::Win32::Debug::GetLastError()
+            $crate::bindings::Windows::Win32::Debug::GetLastError().0
         )
     };
 }
@@ -47,7 +47,7 @@ pub struct ApiError(u32);
 
 impl ApiError {
     pub fn new() -> Self {
-        unsafe { Self(GetLastError()) }
+        unsafe { Self(GetLastError().0) }
     }
 
     pub fn code(&self) -> u32 {

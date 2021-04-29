@@ -38,7 +38,6 @@ fn main() {
             HICON,
         },
         Windows::Win32::Controls::{
-            ImageListLoadImage_uFlags,
             WM_MOUSELEAVE,
         },
         Windows::Win32::WindowsProgramming::{

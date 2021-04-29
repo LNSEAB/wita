@@ -45,7 +45,7 @@ extern "system" fn get_monitors_proc(
 /// Return monitors info.
 pub fn get_monitors() -> Vec<Monitor> {
     unsafe {
-        let len = GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CMONITORS) as usize;
+        let len = GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CMONITORS) as usize;
         let mut v = Vec::with_capacity(len);
         EnumDisplayMonitors(
             HDC(0),
@@ -65,7 +65,7 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
                 x: point.x,
                 y: point.y,
             },
-            MonitorFrom_dwFlags::MONITOR_DEFAULTTONULL,
+            MONITOR_FROM_FLAGS::MONITOR_DEFAULTTONULL,
         );
         if hmonitor == HMONITOR(0) {
             return None;
@@ -96,7 +96,7 @@ mod tests {
         unsafe {
             assert_eq!(
                 monitors.len(),
-                GetSystemMetrics(GetSystemMetrics_nIndexFlags::SM_CMONITORS) as usize
+                GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CMONITORS) as usize
             );
         }
     }
