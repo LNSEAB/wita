@@ -2,6 +2,7 @@ use crate::DEFAULT_DPI;
 
 /// A generic position
 #[derive(Clone, Copy, PartialEq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(C)]
 pub struct Position<T, U> {
     pub x: T,
@@ -52,6 +53,7 @@ impl<T, U> From<(T, T)> for Position<T, U> {
 
 /// A generic size
 #[derive(Clone, Copy, PartialEq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(C)]
 pub struct Size<T, U> {
     pub width: T,
@@ -105,12 +107,15 @@ impl<T, U> From<(T, T)> for Size<T, U> {
 
 /// Logical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Logical;
 /// Physical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Physical;
 /// Screen coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Screen;
 
 /// A position in logical coordinate.
@@ -386,5 +391,30 @@ mod tests {
         let dest = src.to_logical(2.0f32 * DEFAULT_DPI as f32);
         assert!((dest.width - src.width / 2.0).abs() <= std::f32::EPSILON);
         assert!((dest.height - src.height / 2.0).abs() <= std::f32::EPSILON);
+    }
+    
+    #[test]
+    #[cfg(feature = "serde")]
+    fn serde_check() {
+        let src = PhysicalPosition::new(128, 256);
+        let dest: PhysicalPosition<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        assert!(dest.x == 128);
+        assert!(dest.y == 256);
+        let src = PhysicalSize::new(128, 256);
+        let dest: PhysicalSize<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        assert!(dest.width == 128);
+        assert!(dest.height == 256);
+        let src = LogicalPosition::new(128, 256);
+        let dest: LogicalPosition<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        assert!(dest.x == 128);
+        assert!(dest.y == 256);
+        let src = LogicalSize::new(128, 256);
+        let dest: LogicalSize<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        assert!(dest.width == 128);
+        assert!(dest.height == 256);
+        let src = ScreenPosition::new(128, 256);
+        let dest: ScreenPosition = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        assert!(dest.x == 128);
+        assert!(dest.y == 256)
     }
 }
