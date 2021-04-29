@@ -7,6 +7,7 @@ use crate::DEFAULT_DPI;
 pub struct Position<T, U> {
     pub x: T,
     pub y: T,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _u: std::marker::PhantomData<U>,
 }
 
@@ -58,6 +59,7 @@ impl<T, U> From<(T, T)> for Position<T, U> {
 pub struct Size<T, U> {
     pub width: T,
     pub height: T,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _u: std::marker::PhantomData<U>,
 }
 
@@ -107,15 +109,12 @@ impl<T, U> From<(T, T)> for Size<T, U> {
 
 /// Logical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Logical;
 /// Physical coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Physical;
 /// Screen coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Screen;
 
 /// A position in logical coordinate.
