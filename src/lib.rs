@@ -122,7 +122,7 @@ where
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
                 call_handler(|eh: &mut T, _| eh.pre_processing());
-                if PeekMessageW(&mut msg, HWND(0), 0, 0, PEEK_MESSAGE_REMOVE_TYPE::PM_REMOVE)
+                if PeekMessageW(&mut msg, HWND::NULL, 0, 0, PEEK_MESSAGE_REMOVE_TYPE::PM_REMOVE)
                     != BOOL(0)
                 {
                     TranslateMessage(&msg);
@@ -136,7 +136,7 @@ where
         },
         RunType::Wait => unsafe {
             loop {
-                let ret = GetMessageW(&mut msg, HWND(0), 0, 0);
+                let ret = GetMessageW(&mut msg, HWND::NULL, 0, 0);
                 if ret == BOOL(0) || ret == BOOL(-1) {
                     break;
                 }

@@ -14,6 +14,8 @@ fn main() {
         Windows::Win32::KeyboardAndMouseInput::*,
         Windows::Win32::SystemServices::{
             BOOL,
+            TRUE,
+            FALSE,
             HINSTANCE,
             LocalFree,
             GetModuleHandleW,

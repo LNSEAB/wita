@@ -125,7 +125,7 @@ impl ImmContext {
 
     pub fn disable(&self) {
         unsafe {
-            ImmAssociateContextEx(self.hwnd, HIMC(0), IACE_IGNORENOCONTEXT);
+            ImmAssociateContextEx(self.hwnd, HIMC::NULL, IACE_IGNORENOCONTEXT);
         }
     }
 }
@@ -133,7 +133,7 @@ impl ImmContext {
 impl Drop for ImmContext {
     fn drop(&mut self) {
         unsafe {
-            ImmAssociateContextEx(self.hwnd, HIMC(0), IACE_DEFAULT);
+            ImmAssociateContextEx(self.hwnd, HIMC::NULL, IACE_DEFAULT);
             ImmDestroyContext(self.himc);
         }
     }

@@ -129,9 +129,9 @@ unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
         null_mut(),
         FILE_CREATION_DISPOSITION::OPEN_EXISTING,
         FILE_FLAGS_AND_ATTRIBUTES(0),
-        HANDLE(0),
+        HANDLE::NULL,
     );
-    if handle == HANDLE(0) {
+    if handle == HANDLE::NULL {
         last_error!("get_device_name");
         return None;
     }
@@ -510,7 +510,7 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
             device.len() as _,
             size_of::<RAWINPUTDEVICE>() as _,
         );
-        if ret == BOOL(0) {
+        if ret == FALSE {
             last_error!("RegisterRawInputDevices");
         }
         let device_list = get_device_list();

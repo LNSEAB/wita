@@ -31,7 +31,7 @@ pub fn adjust_window_rect(size: PhysicalSize<u32>, style: u32, ex_style: u32, dp
             right: size.width as i32,
             bottom: size.height as i32,
         };
-        AdjustWindowRectExForDpi(&mut rc, style, BOOL(0), ex_style, dpi);
+        AdjustWindowRectExForDpi(&mut rc, style, FALSE, ex_style, dpi);
         rc
     }
 }
@@ -53,6 +53,6 @@ pub fn enable_dpi_awareness() {
 
 pub fn enable_gui_thread() {
     unsafe {
-        IsGUIThread(BOOL(1));
+        IsGUIThread(TRUE);
     }
 }

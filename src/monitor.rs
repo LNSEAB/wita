@@ -38,7 +38,7 @@ extern "system" fn get_monitors_proc(
             size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
             is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
         });
-        BOOL(1)
+        TRUE
     }
 }
 
@@ -48,7 +48,7 @@ pub fn get_monitors() -> Vec<Monitor> {
         let len = GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CMONITORS) as usize;
         let mut v = Vec::with_capacity(len);
         EnumDisplayMonitors(
-            HDC(0),
+            HDC::NULL,
             std::ptr::null_mut(),
             Some(get_monitors_proc),
             LPARAM((&mut v) as *mut Vec<Monitor> as _),
@@ -67,7 +67,7 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
             },
             MONITOR_FROM_FLAGS::MONITOR_DEFAULTTONULL,
         );
-        if hmonitor == HMONITOR(0) {
+        if hmonitor == HMONITOR::NULL {
             return None;
         }
         let mut info = MONITORINFO {

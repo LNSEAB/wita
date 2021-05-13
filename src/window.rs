@@ -18,7 +18,7 @@ use crate::{
 use raw_window_handle::{windows::WindowsHandle, HasRawWindowHandle, RawWindowHandle};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Once, RwLock};
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct WindowHandle(HWND);
@@ -101,35 +101,22 @@ impl Style for WindowStyle {
     }
 }
 
-fn window_class_name() -> &'static Vec<u16> {
-    static mut WINDOW_CLASS_NAME: Vec<u16> = Vec::new();
-    static REGISTER: Once = Once::new();
-    unsafe {
-        REGISTER.call_once(|| {
-            let class_name = "wita_window_class"
-                .encode_utf16()
-                .chain(Some(0))
-                .collect::<Vec<_>>();
-            WINDOW_CLASS_NAME = class_name;
-        });
-        &WINDOW_CLASS_NAME
-    }
-}
+const WINDOW_CLASS_NAME: &str = "wita_window_class";
 
 pub(crate) fn register_class<T: EventHandler + 'static>() {
     unsafe {
-        let class_name = window_class_name();
+        let class_name = WINDOW_CLASS_NAME.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
         let wc = WNDCLASSEXW {
             cbSize: std::mem::size_of::<WNDCLASSEXW>() as _,
             style: WNDCLASS_STYLES(WNDCLASS_STYLES::CS_VREDRAW.0 | WNDCLASS_STYLES::CS_HREDRAW.0),
             lpfnWndProc: Some(window_proc::<T>),
             cbClsExtra: 0,
             cbWndExtra: 0,
-            hInstance: HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut()))),
+            hInstance: HINSTANCE(GetModuleHandleW(PWSTR::NULL)),
             hIcon: HICON::NULL,
-            hCursor: LoadCursorW(HINSTANCE(0), IDC_ARROW),
+            hCursor: LoadCursorW(HINSTANCE::NULL, IDC_ARROW),
             hbrBackground: HBRUSH(GetStockObject(GET_STOCK_OBJECT_FLAGS::WHITE_BRUSH).0),
-            lpszMenuName: PWSTR(std::ptr::null_mut()),
+            lpszMenuName: PWSTR::NULL,
             lpszClassName: PWSTR(class_name.as_ptr() as _),
             hIconSm: HICON::NULL,
         };
@@ -297,22 +284,15 @@ where
         if is_context_null() {
             panic!("The window can be created after run");
         }
-        let class_name = window_class_name();
-        let title = self
-            .title
-            .as_ref()
-            .encode_utf16()
-            .chain(Some(0))
-            .collect::<Vec<_>>();
         unsafe {
             let dpi = get_dpi_from_point(self.position);
             let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
-            let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
+            let hinst = HINSTANCE(GetModuleHandleW(PWSTR::NULL));
             let hwnd = CreateWindowExW(
                 WINDOW_EX_STYLE(0),
-                PWSTR(class_name.as_ptr() as _),
-                PWSTR(title.as_ptr() as _),
+                WINDOW_CLASS_NAME,
+                self.title.as_ref(),
                 WINDOW_STYLE(self.style),
                 self.position.x,
                 self.position.y,
@@ -323,7 +303,7 @@ where
                 hinst,
                 std::ptr::null_mut(),
             );
-            if hwnd == HWND(0) {
+            if hwnd == HWND::NULL {
                 return Err(ApiError::new());
             }
             let window = LocalWindow::new(
@@ -350,7 +330,7 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, BOOL(1));
+                DragAcceptFiles(hwnd, TRUE);
             }
             if let Some(icon) = self.icon {
                 let big = load_icon(&icon, hinst);
@@ -469,17 +449,16 @@ where
     S: ToPhysicalSize<u32>,
 {
     pub fn build(self) -> Result<Window, ApiError> {
-        let class_name = window_class_name();
         unsafe {
             let dpi = self.parent.dpi();
             let position = self.position.to_physical(dpi as i32);
             let size = self.size.to_physical(dpi);
             let rc = adjust_window_rect(size, WINDOW_STYLE::WS_CHILD.0, 0, dpi);
-            let hinst = HINSTANCE(GetModuleHandleW(PWSTR(std::ptr::null_mut())));
+            let hinst = HINSTANCE(GetModuleHandleW(PWSTR::NULL));
             let hwnd = CreateWindowExW(
                 WINDOW_EX_STYLE(0),
-                PWSTR(class_name.as_ptr() as _),
-                PWSTR(std::ptr::null_mut() as _),
+                WINDOW_CLASS_NAME,
+                PWSTR::NULL,
                 WINDOW_STYLE::WS_CHILD,
                 position.x,
                 position.y,
@@ -490,7 +469,7 @@ where
                 hinst,
                 std::ptr::null_mut(),
             );
-            if hwnd == HWND(0) {
+            if hwnd == HWND::NULL {
                 return Err(ApiError::new());
             }
             let window = LocalWindow::new(
@@ -513,7 +492,7 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, BOOL(1));
+                DragAcceptFiles(hwnd, TRUE);
             }
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);
@@ -647,7 +626,7 @@ impl Window {
             RedrawWindow(
                 self.hwnd.0,
                 std::ptr::null(),
-                HRGN(0),
+                HRGN::NULL,
                 REDRAW_WINDOW_FLAGS::RDW_INTERNALPAINT,
             );
         }
@@ -750,7 +729,7 @@ impl Eq for Window {}
 unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         RawWindowHandle::Windows(WindowsHandle {
-            hinstance: unsafe { GetModuleHandleW(PWSTR(std::ptr::null_mut())) as _ },
+            hinstance: unsafe { GetModuleHandleW(PWSTR::NULL) as _ },
             hwnd: self.hwnd.0 .0 as _,
             ..WindowsHandle::empty()
         })

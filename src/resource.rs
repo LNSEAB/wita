@@ -35,14 +35,9 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
                 IMAGE_FLAGS::LR_SHARED,
             ),
             Icon::File(path) => {
-                let wpath = path
-                    .to_string_lossy()
-                    .encode_utf16()
-                    .chain(Some(0))
-                    .collect::<Vec<_>>();
                 LoadImageW(
-                    HINSTANCE(0),
-                    PWSTR(wpath.as_ptr() as _),
+                    HINSTANCE::NULL,
+                    path.to_string_lossy().as_ref(),
                     GDI_IMAGE_TYPE::IMAGE_ICON,
                     cx,
                     cy,
@@ -54,7 +49,7 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
             }
         }
     };
-    if icon == HANDLE(0) {
+    if icon == HANDLE::NULL {
         panic!("cannot load the icon");
     }
     HICON(icon.0)

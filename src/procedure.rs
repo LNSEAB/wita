@@ -421,12 +421,12 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
             WM_DROPFILES => {
                 let hdrop = HDROP(wparam.0 as _);
                 let file_count =
-                    DragQueryFileW(hdrop, std::u32::MAX, PWSTR(std::ptr::null_mut()), 0);
+                    DragQueryFileW(hdrop, std::u32::MAX, PWSTR::NULL, 0);
                 let mut buffer = Vec::new();
                 let files = (0..file_count)
                     .map(|i| {
                         let len =
-                            DragQueryFileW(hdrop, i, PWSTR(std::ptr::null_mut()), 0) as usize + 1;
+                            DragQueryFileW(hdrop, i, PWSTR::NULL, 0) as usize + 1;
                         buffer.resize(len, 0);
                         DragQueryFileW(hdrop, i, PWSTR(buffer.as_mut_ptr()), len as u32);
                         buffer.pop();
@@ -478,12 +478,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                 match wparam.0 {
                     w if w == UserMessage::SetTitle as usize => {
                         let state = handle.state.read().unwrap();
-                        let s = state
-                            .title
-                            .encode_utf16()
-                            .chain(Some(0))
-                            .collect::<Vec<_>>();
-                        SetWindowTextW(hwnd, PWSTR(s.as_ptr() as _));
+                        SetWindowTextW(hwnd, state.title.as_str());
                     }
                     w if w == UserMessage::SetPosition as usize => {
                         let state = handle.state.read().unwrap();
