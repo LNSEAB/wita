@@ -1,5 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    UI::DisplayDevices::*, Graphics::Gdi::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
+    Graphics::Gdi::*, System::SystemServices::*, UI::DisplayDevices::*, UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 
@@ -94,10 +94,7 @@ mod tests {
     fn monitors_len() {
         let monitors = get_monitors();
         unsafe {
-            assert_eq!(
-                monitors.len(),
-                GetSystemMetrics(SM_CMONITORS) as usize
-            );
+            assert_eq!(monitors.len(), GetSystemMetrics(SM_CMONITORS) as usize);
         }
     }
 }

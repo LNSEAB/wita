@@ -391,28 +391,33 @@ mod tests {
         assert!((dest.width - src.width / 2.0).abs() <= std::f32::EPSILON);
         assert!((dest.height - src.height / 2.0).abs() <= std::f32::EPSILON);
     }
-    
+
     #[test]
     #[cfg(feature = "serde")]
     fn serde_check() {
         let src = PhysicalPosition::new(128, 256);
-        let dest: PhysicalPosition<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        let dest: PhysicalPosition<i32> =
+            serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
         assert!(dest.x == 128);
         assert!(dest.y == 256);
         let src = PhysicalSize::new(128, 256);
-        let dest: PhysicalSize<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        let dest: PhysicalSize<i32> =
+            serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
         assert!(dest.width == 128);
         assert!(dest.height == 256);
         let src = LogicalPosition::new(128, 256);
-        let dest: LogicalPosition<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        let dest: LogicalPosition<i32> =
+            serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
         assert!(dest.x == 128);
         assert!(dest.y == 256);
         let src = LogicalSize::new(128, 256);
-        let dest: LogicalSize<i32> = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        let dest: LogicalSize<i32> =
+            serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
         assert!(dest.width == 128);
         assert!(dest.height == 256);
         let src = ScreenPosition::new(128, 256);
-        let dest: ScreenPosition = serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
+        let dest: ScreenPosition =
+            serde_json::from_str(&serde_json::to_string(&src).unwrap()).unwrap();
         assert!(dest.x == 128);
         assert!(dest.y == 256)
     }

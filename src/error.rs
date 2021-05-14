@@ -1,4 +1,4 @@
-use crate::bindings::Windows::Win32::{System::Diagnostics::Debug::*, System::Memory::*,};
+use crate::bindings::Windows::Win32::{System::Diagnostics::Debug::*, System::Memory::*};
 use std::ptr::{null, null_mut};
 
 #[doc(hidden)]

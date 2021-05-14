@@ -1,6 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, UI::MenusAndResources::*, UI::Shell::*, System::SystemServices::*,
-    UI::WindowsAndMessaging::*,
+    Graphics::Gdi::*, System::SystemServices::*, UI::DisplayDevices::*, UI::HiDpi::*,
+    UI::MenusAndResources::*, UI::Shell::*, UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -105,7 +105,10 @@ const WINDOW_CLASS_NAME: &str = "wita_window_class";
 
 pub(crate) fn register_class<T: EventHandler + 'static>() {
     unsafe {
-        let class_name = WINDOW_CLASS_NAME.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+        let class_name = WINDOW_CLASS_NAME
+            .encode_utf16()
+            .chain(Some(0))
+            .collect::<Vec<_>>();
         let wc = WNDCLASSEXW {
             cbSize: std::mem::size_of::<WNDCLASSEXW>() as _,
             style: WNDCLASS_STYLES(CS_VREDRAW.0 | CS_HREDRAW.0),
@@ -623,12 +626,7 @@ impl Window {
 
     pub fn redraw(&self) {
         unsafe {
-            RedrawWindow(
-                self.hwnd.0,
-                std::ptr::null(),
-                HRGN::NULL,
-                RDW_INTERNALPAINT,
-            );
+            RedrawWindow(self.hwnd.0, std::ptr::null(), HRGN::NULL, RDW_INTERNALPAINT);
         }
     }
 

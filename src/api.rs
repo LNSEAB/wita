@@ -1,5 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
+    Graphics::Gdi::*, System::SystemServices::*, UI::DisplayDevices::*, UI::HiDpi::*,
+    UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 use std::sync::Once;
@@ -9,10 +10,7 @@ pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
         let mut dpi_x = 0;
         let mut _dpi_y = 0;
         GetDpiForMonitor(
-            MonitorFromPoint(
-                POINT { x: pt.x, y: pt.y },
-                MONITOR_DEFAULTTOPRIMARY,
-            ),
+            MonitorFromPoint(POINT { x: pt.x, y: pt.y }, MONITOR_DEFAULTTOPRIMARY),
             MDT_DEFAULT,
             &mut dpi_x,
             &mut _dpi_y,

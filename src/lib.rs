@@ -122,9 +122,7 @@ where
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
                 call_handler(|eh: &mut T, _| eh.pre_processing());
-                if PeekMessageW(&mut msg, HWND::NULL, 0, 0, PM_REMOVE)
-                    != BOOL(0)
-                {
+                if PeekMessageW(&mut msg, HWND::NULL, 0, 0, PM_REMOVE) != BOOL(0) {
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
                 } else {

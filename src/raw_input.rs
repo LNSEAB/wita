@@ -3,8 +3,8 @@
 //! To use, specify `"raw_input"` feature.
 
 use crate::bindings::Windows::Win32::{
-    Storage::FileSystem::*, Devices::HumanInterfaceDevice::*, UI::KeyboardAndMouseInput::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
-    System::WindowsProgramming::*,
+    Devices::HumanInterfaceDevice::*, Storage::FileSystem::*, System::SystemServices::*,
+    System::WindowsProgramming::*, UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*,
 };
 use crate::context::call_handler;
 use crate::device::*;
@@ -70,24 +70,14 @@ pub struct Limit {
 
 unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
     let mut len = 0;
-    let ret = GetRawInputDeviceInfoW(
-        handle,
-        RIDI_PREPARSEDDATA,
-        null_mut(),
-        &mut len,
-    );
+    let ret = GetRawInputDeviceInfoW(handle, RIDI_PREPARSEDDATA, null_mut(), &mut len);
     if (ret as i32) == -1 {
         last_error!("get_parsed_data");
         return None;
     }
     dest.clear();
     dest.resize(len as _, 0);
-    let ret = GetRawInputDeviceInfoW(
-        handle,
-        RIDI_PREPARSEDDATA,
-        dest.as_mut_ptr() as _,
-        &mut len,
-    );
+    let ret = GetRawInputDeviceInfoW(handle, RIDI_PREPARSEDDATA, dest.as_mut_ptr() as _, &mut len);
     if (ret as i32) == -1 {
         last_error!("get_parsed_data");
         return None;
@@ -97,23 +87,13 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
 
 unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut len = 0;
-    let ret = GetRawInputDeviceInfoW(
-        handle,
-        RIDI_DEVICENAME,
-        null_mut(),
-        &mut len,
-    );
+    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICENAME, null_mut(), &mut len);
     if ret != 0 {
         last_error!("get_device_interface");
         return None;
     }
     let mut v = vec![0u16; len as usize + 1];
-    let ret = GetRawInputDeviceInfoW(
-        handle,
-        RIDI_DEVICENAME,
-        v.as_mut_ptr() as _,
-        &mut len,
-    );
+    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICENAME, v.as_mut_ptr() as _, &mut len);
     if ret == std::u32::MAX {
         last_error!("get_device_interface");
         return None;
@@ -159,12 +139,7 @@ unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
             keyboard: Default::default(),
         },
     };
-    let ret = GetRawInputDeviceInfoW(
-        handle,
-        RIDI_DEVICEINFO,
-        &mut info as *mut _ as _,
-        &mut len,
-    );
+    let ret = GetRawInputDeviceInfoW(handle, RIDI_DEVICEINFO, &mut info as *mut _ as _, &mut len);
     if (ret as i32) < 0 {
         last_error!("GetRawInputDeviceInfoW");
         return None;
@@ -290,12 +265,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     let mut len = caps.NumberInputButtonCaps as u16;
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
-                    let ret = HidP_GetButtonCaps(
-                        HidP_Input,
-                        caps.as_mut_ptr(),
-                        &mut len,
-                        p as _,
-                    );
+                    let ret = HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p as _);
                     if ret != HIDP_STATUS_SUCCESS {
                         last_error!("HidP_GetButtonCaps");
                         return None;
@@ -312,12 +282,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     let mut len = caps.NumberInputValueCaps;
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
-                    let ret = HidP_GetValueCaps(
-                        HidP_Input,
-                        caps.as_mut_ptr(),
-                        &mut len,
-                        p as _,
-                    );
+                    let ret = HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p as _);
                     if ret != HIDP_STATUS_SUCCESS {
                         last_error!("HidP_GetValueCaps");
                         return None;
@@ -416,8 +381,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             let mut len = caps.NumberInputButtonCaps;
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
-            let ret =
-                HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+            let ret = HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
@@ -427,8 +391,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             let mut len = caps.NumberInputValueCaps;
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
-            let ret =
-                HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
+            let ret = HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
@@ -436,9 +399,7 @@ unsafe fn register_gamepad_context(device: &Device) {
         };
         let button_range = button_caps[0].Anonymous.Range;
         let button_num = (button_range.UsageMax - button_range.UsageMin + 1) as usize;
-        let usage_num =
-            HidP_MaxUsageListLength(HidP_Input, button_caps[0].UsagePage, p)
-                as usize;
+        let usage_num = HidP_MaxUsageListLength(HidP_Input, button_caps[0].UsagePage, p) as usize;
         ctxs.push(GamePadContext {
             device: device.clone(),
             preparsed,
@@ -845,13 +806,7 @@ where
     let input_handle = HRAWINPUT(lparam.0);
     let data = RAW_INPUT_DATA.with(|data| {
         let mut len = 0;
-        let ret = GetRawInputData(
-            input_handle,
-            RID_INPUT,
-            null_mut(),
-            &mut len,
-            HEADER_SIZE,
-        );
+        let ret = GetRawInputData(input_handle, RID_INPUT, null_mut(), &mut len, HEADER_SIZE);
         if (ret as i32) < 0 {
             last_error!("GetRawInputData");
             return None;

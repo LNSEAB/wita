@@ -1,5 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    UI::Controls::*, UI::MenusAndResources::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
+    System::SystemServices::*, UI::Controls::*, UI::MenusAndResources::*,
+    UI::WindowsAndMessaging::*,
 };
 use std::path::{Path, PathBuf};
 
@@ -26,25 +27,17 @@ impl Icon {
 fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
     let icon = unsafe {
         match icon {
-            Icon::Resource(id) => LoadImageW(
-                hinst,
-                make_int_resource(*id),
+            Icon::Resource(id) => {
+                LoadImageW(hinst, make_int_resource(*id), IMAGE_ICON, cx, cy, LR_SHARED)
+            }
+            Icon::File(path) => LoadImageW(
+                HINSTANCE::NULL,
+                path.to_string_lossy().as_ref(),
                 IMAGE_ICON,
                 cx,
                 cy,
-                LR_SHARED,
+                LR_SHARED | LR_LOADFROMFILE,
             ),
-            Icon::File(path) => {
-                LoadImageW(
-                    HINSTANCE::NULL,
-                    path.to_string_lossy().as_ref(),
-                    IMAGE_ICON,
-                    cx,
-                    cy,
-                    LR_SHARED
-                        | LR_LOADFROMFILE,
-                )
-            }
         }
     };
     if icon == HANDLE::NULL {

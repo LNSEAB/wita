@@ -1,6 +1,7 @@
 use crate::bindings::Windows::Win32::{
-    UI::Controls::*, UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, Globalization::*, UI::KeyboardAndMouseInput::*, UI::Shell::*,
-    System::SystemServices::*, UI::WindowsAndMessaging::*,
+    Globalization::*, Graphics::Gdi::*, System::SystemServices::*, UI::Controls::*,
+    UI::DisplayDevices::*, UI::HiDpi::*, UI::KeyboardAndMouseInput::*, UI::Shell::*,
+    UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -420,13 +421,11 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_DROPFILES => {
                 let hdrop = HDROP(wparam.0 as _);
-                let file_count =
-                    DragQueryFileW(hdrop, std::u32::MAX, PWSTR::NULL, 0);
+                let file_count = DragQueryFileW(hdrop, std::u32::MAX, PWSTR::NULL, 0);
                 let mut buffer = Vec::new();
                 let files = (0..file_count)
                     .map(|i| {
-                        let len =
-                            DragQueryFileW(hdrop, i, PWSTR::NULL, 0) as usize + 1;
+                        let len = DragQueryFileW(hdrop, i, PWSTR::NULL, 0) as usize + 1;
                         buffer.resize(len, 0);
                         DragQueryFileW(hdrop, i, PWSTR(buffer.as_mut_ptr()), len as u32);
                         buffer.pop();
@@ -489,9 +488,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             state.set_position.1,
                             0,
                             0,
-                            SWP_NOZORDER
-                                | SWP_NOSIZE
-                                | SWP_NOACTIVATE,
+                            SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
@@ -509,9 +506,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SWP_NOZORDER
-                                | SWP_NOMOVE
-                                | SWP_NOACTIVATE,
+                            SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::EnableIme as usize => {
@@ -539,9 +534,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SWP_NOMOVE
-                                | SWP_NOZORDER
-                                | SWP_FRAMECHANGED,
+                            SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED,
                         );
                         ShowWindow(hwnd, SW_SHOW);
                     }
