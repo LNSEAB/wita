@@ -1,6 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    Controls::*, DisplayDevices::*, Gdi::*, HiDpi::*, Intl::*, KeyboardAndMouseInput::*, Shell::*,
-    SystemServices::*, WindowsAndMessaging::*,
+    UI::Controls::*, UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, Globalization::*, UI::KeyboardAndMouseInput::*, UI::Shell::*,
+    System::SystemServices::*, UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -155,7 +155,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     if state.entered_window.is_none() {
                         TrackMouseEvent(&mut TRACKMOUSEEVENT {
                             cbSize: std::mem::size_of::<TRACKMOUSEEVENT>() as _,
-                            dwFlags: TRACKMOUSEEVENT_FLAGS::TME_LEAVE,
+                            dwFlags: TME_LEAVE,
                             hwndTrack: hwnd,
                             dwHoverTime: 0,
                         });
@@ -367,7 +367,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
             }
             WM_WINDOWPOSCHANGED => {
                 let pos = &*(lparam.0 as *const WINDOWPOS);
-                if pos.flags.0 & SET_WINDOW_POS_FLAGS::SWP_NOMOVE.0 == 0 {
+                if pos.flags.0 & SWP_NOMOVE.0 == 0 {
                     call_handler(|eh: &mut T, _| {
                         eh.moved(handle, ScreenPosition::new(pos.x, pos.y))
                     });
@@ -393,7 +393,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     rc.top,
                     rc.right - rc.left,
                     rc.bottom - rc.top,
-                    SET_WINDOW_POS_FLAGS::SWP_NOZORDER | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
+                    SWP_NOZORDER | SWP_NOACTIVATE,
                 );
                 call_handler(|eh: &mut T, _| eh.dpi_changed(handle));
                 LRESULT(0)
@@ -409,8 +409,8 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                 );
                 let rc = adjust_window_rect(
                     size,
-                    GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE) as _,
-                    GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_EXSTYLE) as _,
+                    GetWindowLongPtrW(hwnd, GWL_STYLE) as _,
+                    GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as _,
                     next_dpi as u32,
                 );
                 let mut ret = (lparam.0 as *mut SIZE).as_mut().unwrap();
@@ -489,17 +489,17 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             state.set_position.1,
                             0,
                             0,
-                            SET_WINDOW_POS_FLAGS::SWP_NOZORDER
-                                | SET_WINDOW_POS_FLAGS::SWP_NOSIZE
-                                | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
+                            SWP_NOZORDER
+                                | SWP_NOSIZE
+                                | SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::SetInnerSize as usize => {
                         let state = handle.state.read().unwrap();
                         let rc = adjust_window_rect(
                             state.set_inner_size,
-                            GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE) as _,
-                            GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_EXSTYLE) as _,
+                            GetWindowLongPtrW(hwnd, GWL_STYLE) as _,
+                            GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as _,
                             GetDpiForWindow(hwnd),
                         );
                         SetWindowPos(
@@ -509,9 +509,9 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SET_WINDOW_POS_FLAGS::SWP_NOZORDER
-                                | SET_WINDOW_POS_FLAGS::SWP_NOMOVE
-                                | SET_WINDOW_POS_FLAGS::SWP_NOACTIVATE,
+                            SWP_NOZORDER
+                                | SWP_NOMOVE
+                                | SWP_NOACTIVATE,
                         );
                     }
                     w if w == UserMessage::EnableIme as usize => {
@@ -531,7 +531,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             GetDpiForWindow(hwnd),
                         );
-                        SetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX::GWL_STYLE, style as _);
+                        SetWindowLongPtrW(hwnd, GWL_STYLE, style as _);
                         SetWindowPos(
                             hwnd,
                             HWND(0),
@@ -539,11 +539,11 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                             0,
                             rc.right - rc.left,
                             rc.bottom - rc.top,
-                            SET_WINDOW_POS_FLAGS::SWP_NOMOVE
-                                | SET_WINDOW_POS_FLAGS::SWP_NOZORDER
-                                | SET_WINDOW_POS_FLAGS::SWP_FRAMECHANGED,
+                            SWP_NOMOVE
+                                | SWP_NOZORDER
+                                | SWP_FRAMECHANGED,
                         );
-                        ShowWindow(hwnd, SHOW_WINDOW_CMD::SW_SHOW);
+                        ShowWindow(hwnd, SW_SHOW);
                     }
                     w if w == UserMessage::AcceptDragFiles as usize => {
                         DragAcceptFiles(hwnd, BOOL(lparam.0 as _));

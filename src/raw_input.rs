@@ -3,8 +3,8 @@
 //! To use, specify `"raw_input"` feature.
 
 use crate::bindings::Windows::Win32::{
-    FileSystem::*, Hid::*, KeyboardAndMouseInput::*, SystemServices::*, WindowsAndMessaging::*,
-    WindowsProgramming::*,
+    Storage::FileSystem::*, Devices::HumanInterfaceDevice::*, UI::KeyboardAndMouseInput::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
+    System::WindowsProgramming::*,
 };
 use crate::context::call_handler;
 use crate::device::*;
@@ -72,7 +72,7 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
     let mut len = 0;
     let ret = GetRawInputDeviceInfoW(
         handle,
-        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_PREPARSEDDATA,
+        RIDI_PREPARSEDDATA,
         null_mut(),
         &mut len,
     );
@@ -84,7 +84,7 @@ unsafe fn get_preparsed_data(handle: HANDLE, dest: &mut Vec<u8>) -> Option<()> {
     dest.resize(len as _, 0);
     let ret = GetRawInputDeviceInfoW(
         handle,
-        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_PREPARSEDDATA,
+        RIDI_PREPARSEDDATA,
         dest.as_mut_ptr() as _,
         &mut len,
     );
@@ -99,7 +99,7 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut len = 0;
     let ret = GetRawInputDeviceInfoW(
         handle,
-        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICENAME,
+        RIDI_DEVICENAME,
         null_mut(),
         &mut len,
     );
@@ -110,7 +110,7 @@ unsafe fn get_device_interface(handle: HANDLE) -> Option<Vec<u16>> {
     let mut v = vec![0u16; len as usize + 1];
     let ret = GetRawInputDeviceInfoW(
         handle,
-        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICENAME,
+        RIDI_DEVICENAME,
         v.as_mut_ptr() as _,
         &mut len,
     );
@@ -125,9 +125,9 @@ unsafe fn get_device_name(interface: &[u16]) -> Option<String> {
     let handle = CreateFileW(
         PWSTR(interface.as_ptr() as _),
         FILE_ACCESS_FLAGS(0),
-        FILE_SHARE_MODE(FILE_SHARE_MODE::FILE_SHARE_READ.0 | FILE_SHARE_MODE::FILE_SHARE_WRITE.0),
+        FILE_SHARE_MODE(FILE_SHARE_READ.0 | FILE_SHARE_WRITE.0),
         null_mut(),
-        FILE_CREATION_DISPOSITION::OPEN_EXISTING,
+        OPEN_EXISTING,
         FILE_FLAGS_AND_ATTRIBUTES(0),
         HANDLE::NULL,
     );
@@ -161,7 +161,7 @@ unsafe fn get_raw_input_device_info(handle: HANDLE) -> Option<RID_DEVICE_INFO> {
     };
     let ret = GetRawInputDeviceInfoW(
         handle,
-        RAW_INPUT_DEVICE_INFO_COMMAND::RIDI_DEVICEINFO,
+        RIDI_DEVICEINFO,
         &mut info as *mut _ as _,
         &mut len,
     );
@@ -258,7 +258,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
     unsafe {
         let info = get_raw_input_device_info(device.handle)?;
         match info.dwType {
-            RID_DEVICE_INFO_TYPE::RIM_TYPEKEYBOARD => {
+            RIM_TYPEKEYBOARD => {
                 let keyboard = info.Anonymous.keyboard;
                 Some(DeviceInfo::Keyboard(KeyboardInfo {
                     function_num: keyboard.dwNumberOfFunctionKeys,
@@ -266,7 +266,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     keys_total: keyboard.dwNumberOfKeysTotal,
                 }))
             }
-            RID_DEVICE_INFO_TYPE::RIM_TYPEMOUSE => {
+            RIM_TYPEMOUSE => {
                 let mouse = info.Anonymous.mouse;
                 Some(DeviceInfo::Mouse(MouseInfo {
                     button_num: mouse.dwNumberOfButtons,
@@ -274,7 +274,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     has_hwheel: mouse.fHasHorizontalWheel.0 != 0,
                 }))
             }
-            RID_DEVICE_INFO_TYPE::RIM_TYPEHID => {
+            RIM_TYPEHID => {
                 let mut preparsed = vec![];
                 get_preparsed_data(device.handle, &mut preparsed)?;
                 let p = preparsed.as_mut_ptr();
@@ -291,7 +291,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
                     let ret = HidP_GetButtonCaps(
-                        HIDP_REPORT_TYPE::HidP_Input,
+                        HidP_Input,
                         caps.as_mut_ptr(),
                         &mut len,
                         p as _,
@@ -313,7 +313,7 @@ pub fn get_device_info(device: &Device) -> Option<DeviceInfo> {
                     let mut caps = Vec::with_capacity(len as _);
                     caps.set_len(len as _);
                     let ret = HidP_GetValueCaps(
-                        HIDP_REPORT_TYPE::HidP_Input,
+                        HidP_Input,
                         caps.as_mut_ptr(),
                         &mut len,
                         p as _,
@@ -417,7 +417,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
             let ret =
-                HidP_GetButtonCaps(HIDP_REPORT_TYPE::HidP_Input, caps.as_mut_ptr(), &mut len, p);
+                HidP_GetButtonCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
@@ -428,7 +428,7 @@ unsafe fn register_gamepad_context(device: &Device) {
             let mut caps = Vec::with_capacity(len as _);
             caps.set_len(len as _);
             let ret =
-                HidP_GetValueCaps(HIDP_REPORT_TYPE::HidP_Input, caps.as_mut_ptr(), &mut len, p);
+                HidP_GetValueCaps(HidP_Input, caps.as_mut_ptr(), &mut len, p);
             if ret != HIDP_STATUS_SUCCESS {
                 return;
             }
@@ -437,7 +437,7 @@ unsafe fn register_gamepad_context(device: &Device) {
         let button_range = button_caps[0].Anonymous.Range;
         let button_num = (button_range.UsageMax - button_range.UsageMin + 1) as usize;
         let usage_num =
-            HidP_MaxUsageListLength(HIDP_REPORT_TYPE::HidP_Input, button_caps[0].UsagePage, p)
+            HidP_MaxUsageListLength(HidP_Input, button_caps[0].UsagePage, p)
                 as usize;
         ctxs.push(GamePadContext {
             device: device.clone(),
@@ -471,9 +471,9 @@ impl From<WPARAM> for WindowState {
 
 pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
     let flags = RAWINPUTDEVICE_FLAGS(
-        RAWINPUTDEVICE_FLAGS::RIDEV_DEVNOTIFY.0
+        RIDEV_DEVNOTIFY.0
             | if state == WindowState::Background {
-                RAWINPUTDEVICE_FLAGS::RIDEV_INPUTSINK.0
+                RIDEV_INPUTSINK.0
             } else {
                 0
             },
@@ -531,9 +531,9 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
 unsafe fn get_device_type(handle: HANDLE) -> Option<DeviceType> {
     let info = get_raw_input_device_info(handle)?;
     match info.dwType {
-        RID_DEVICE_INFO_TYPE::RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
-        RID_DEVICE_INFO_TYPE::RIM_TYPEMOUSE => Some(DeviceType::Mouse),
-        RID_DEVICE_INFO_TYPE::RIM_TYPEHID => {
+        RIM_TYPEKEYBOARD => Some(DeviceType::Keyboard),
+        RIM_TYPEMOUSE => Some(DeviceType::Mouse),
+        RIM_TYPEHID => {
             let hid = info.Anonymous.hid;
             if hid.usUsagePage != HID_USAGE_PAGE_GENERIC {
                 return None;
@@ -744,7 +744,7 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
         let p = ctx.preparsed.as_mut_ptr() as _;
         let mut len = ctx.usage.len() as _;
         let ret = HidP_GetUsages(
-            HIDP_REPORT_TYPE::HidP_Input,
+            HidP_Input,
             ctx.button_caps[0].UsagePage,
             0,
             ctx.usage.as_mut_ptr(),
@@ -785,7 +785,7 @@ unsafe fn input_data_gamepad(input: &mut RAWINPUT) -> Option<InputData> {
                 caps.Anonymous.NotRange.Usage
             };
             let ret = HidP_GetUsageValue(
-                HIDP_REPORT_TYPE::HidP_Input,
+                HidP_Input,
                 caps.UsagePage,
                 0,
                 usage,
@@ -847,7 +847,7 @@ where
         let mut len = 0;
         let ret = GetRawInputData(
             input_handle,
-            RAW_INPUT_DATA_COMMAND_FLAGS::RID_INPUT,
+            RID_INPUT,
             null_mut(),
             &mut len,
             HEADER_SIZE,
@@ -861,7 +861,7 @@ where
         v.resize(len as _, 0);
         let ret = GetRawInputData(
             input_handle,
-            RAW_INPUT_DATA_COMMAND_FLAGS::RID_INPUT,
+            RID_INPUT,
             v.as_mut_ptr() as _,
             &mut len,
             HEADER_SIZE,

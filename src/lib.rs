@@ -96,7 +96,7 @@ pub use monitor::*;
 pub use resource::*;
 pub use window::*;
 
-use bindings::Windows::Win32::{SystemServices::*, WindowsAndMessaging::*};
+use bindings::Windows::Win32::{System::SystemServices::*, UI::WindowsAndMessaging::*};
 use context::*;
 
 /// The value is an unit in logical coordinates.
@@ -122,7 +122,7 @@ where
         RunType::Idle => unsafe {
             while msg.message != WM_QUIT {
                 call_handler(|eh: &mut T, _| eh.pre_processing());
-                if PeekMessageW(&mut msg, HWND::NULL, 0, 0, PEEK_MESSAGE_REMOVE_TYPE::PM_REMOVE)
+                if PeekMessageW(&mut msg, HWND::NULL, 0, 0, PM_REMOVE)
                     != BOOL(0)
                 {
                     TranslateMessage(&msg);

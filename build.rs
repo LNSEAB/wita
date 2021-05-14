@@ -1,8 +1,8 @@
 fn main() {
     windows::build!(
-        Windows::Win32::WindowsAndMessaging::*,
-        Windows::Win32::HiDpi::*,
-        Windows::Win32::Gdi::{
+        Windows::Win32::UI::WindowsAndMessaging::*,
+        Windows::Win32::UI::HiDpi::*,
+        Windows::Win32::Graphics::Gdi::{
             MonitorFromPoint,
             GetMonitorInfoW,
             EnumDisplayMonitors,
@@ -10,44 +10,51 @@ fn main() {
             EndPaint,
             GetStockObject,
             RedrawWindow,
+            MONITOR_DEFAULTTONULL,
+            MONITOR_DEFAULTTOPRIMARY,
+            MONITORINFO,
+            PAINTSTRUCT,
+            WHITE_BRUSH,
+            RDW_INTERNALPAINT,
         },
-        Windows::Win32::KeyboardAndMouseInput::*,
-        Windows::Win32::SystemServices::{
+        Windows::Win32::UI::KeyboardAndMouseInput::*,
+        Windows::Win32::System::SystemServices::{
+            GetModuleHandleW,
             BOOL,
             TRUE,
             FALSE,
-            HINSTANCE,
-            LocalFree,
-            GetModuleHandleW,
         },
-        Windows::Win32::DisplayDevices::{
+        Windows::Win32::System::Memory::{
+            LocalFree,
+        },
+        Windows::Win32::UI::DisplayDevices::{
             POINT,
             RECT,
         },
-        Windows::Win32::Debug::{
+        Windows::Win32::System::Diagnostics::Debug::{
             FormatMessageW,
             GetLastError,
-            FORMAT_MESSAGE_OPTIONS,
+            FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            FORMAT_MESSAGE_IGNORE_INSERTS,
         },
-        Windows::Win32::Intl::*,
-        Windows::Win32::Shell::{
+        Windows::Win32::Globalization::*,
+        Windows::Win32::UI::Shell::{
             DragAcceptFiles,
             DragQueryFileW,
             DragQueryPoint,
-            DragFinish,
+            DragFinish
         },
-        Windows::Win32::MenusAndResources::{
-            HICON,
-        },
-        Windows::Win32::Controls::{
+        Windows::Win32::UI::MenusAndResources::*,
+        Windows::Win32::UI::Controls::{
+            LR_SHARED,
+            LR_LOADFROMFILE,
             WM_MOUSELEAVE,
         },
-        Windows::Win32::WindowsProgramming::{
+        Windows::Win32::System::WindowsProgramming::{
             CloseHandle,
         },
-        Windows::Win32::FileSystem::{
-            CreateFileW,
-        },
-        Windows::Win32::Hid::*,
+        Windows::Win32::Storage::FileSystem::*,
+        Windows::Win32::Devices::HumanInterfaceDevice::*,
     );
 }

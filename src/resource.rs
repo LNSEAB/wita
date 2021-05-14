@@ -1,5 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    Controls::*, MenusAndResources::*, SystemServices::*, WindowsAndMessaging::*,
+    UI::Controls::*, UI::MenusAndResources::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
 };
 use std::path::{Path, PathBuf};
 
@@ -29,22 +29,20 @@ fn load_icon_impl(hinst: HINSTANCE, icon: &Icon, cx: i32, cy: i32) -> HICON {
             Icon::Resource(id) => LoadImageW(
                 hinst,
                 make_int_resource(*id),
-                GDI_IMAGE_TYPE::IMAGE_ICON,
+                IMAGE_ICON,
                 cx,
                 cy,
-                IMAGE_FLAGS::LR_SHARED,
+                LR_SHARED,
             ),
             Icon::File(path) => {
                 LoadImageW(
                     HINSTANCE::NULL,
                     path.to_string_lossy().as_ref(),
-                    GDI_IMAGE_TYPE::IMAGE_ICON,
+                    IMAGE_ICON,
                     cx,
                     cy,
-                    IMAGE_FLAGS(
-                        IMAGE_FLAGS::LR_SHARED.0
-                            | IMAGE_FLAGS::LR_LOADFROMFILE.0,
-                    ),
+                    LR_SHARED
+                        | LR_LOADFROMFILE,
                 )
             }
         }
@@ -60,8 +58,8 @@ pub(crate) fn load_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CXICON),
-            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CYICON),
+            GetSystemMetrics(SM_CXICON),
+            GetSystemMetrics(SM_CYICON),
         )
     }
 }
@@ -71,8 +69,8 @@ pub(crate) fn load_small_icon(icon: &Icon, hinst: HINSTANCE) -> HICON {
         load_icon_impl(
             hinst,
             icon,
-            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CXSMICON),
-            GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CYSMICON),
+            GetSystemMetrics(SM_CXSMICON),
+            GetSystemMetrics(SM_CYSMICON),
         )
     }
 }

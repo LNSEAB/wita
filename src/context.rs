@@ -1,4 +1,4 @@
-use crate::bindings::Windows::Win32::WindowsAndMessaging::*;
+use crate::bindings::Windows::Win32::UI::WindowsAndMessaging::*;
 use crate::{device::*, event::EventHandler, window::LocalWindow};
 use std::any::Any;
 use std::cell::RefCell;

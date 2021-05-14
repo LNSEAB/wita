@@ -1,4 +1,4 @@
-use crate::bindings::Windows::Win32::{Debug::*, SystemServices::*};
+use crate::bindings::Windows::Win32::{System::Diagnostics::Debug::*, System::Memory::*,};
 use std::ptr::{null, null_mut};
 
 #[doc(hidden)]
@@ -10,7 +10,7 @@ macro_rules! last_error {
             file!(),
             line!(),
             $s,
-            $crate::bindings::Windows::Win32::Debug::GetLastError().0
+            $crate::bindings::Windows::Win32::System::Diagnostics::Debug::GetLastError().0
         )
     };
 }
@@ -19,11 +19,9 @@ fn format_message(code: u32) -> Option<String> {
     unsafe {
         let mut p = null_mut() as *mut u16;
         let len = FormatMessageW(
-            FORMAT_MESSAGE_OPTIONS(
-                FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_ALLOCATE_BUFFER.0
-                    | FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_FROM_SYSTEM.0
-                    | FORMAT_MESSAGE_OPTIONS::FORMAT_MESSAGE_IGNORE_INSERTS.0,
-            ),
+            FORMAT_MESSAGE_ALLOCATE_BUFFER
+                | FORMAT_MESSAGE_FROM_SYSTEM
+                | FORMAT_MESSAGE_IGNORE_INSERTS,
             null(),
             code,
             0,

@@ -1,5 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    DisplayDevices::*, Gdi::*, HiDpi::*, SystemServices::*, WindowsAndMessaging::*,
+    UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 use std::sync::Once;
@@ -11,9 +11,9 @@ pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
         GetDpiForMonitor(
             MonitorFromPoint(
                 POINT { x: pt.x, y: pt.y },
-                MONITOR_FROM_FLAGS::MONITOR_DEFAULTTOPRIMARY,
+                MONITOR_DEFAULTTOPRIMARY,
             ),
-            MONITOR_DPI_TYPE::MDT_DEFAULT,
+            MDT_DEFAULT,
             &mut dpi_x,
             &mut _dpi_y,
         )
@@ -40,10 +40,10 @@ pub fn enable_dpi_awareness() {
     static ENABLE_DPI_AWARENESS: Once = Once::new();
     unsafe {
         ENABLE_DPI_AWARENESS.call_once(|| {
-            if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT(-4)) != BOOL(1)
-                && SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT(-3)) != BOOL(1)
+            if SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) != TRUE
+                && SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE) != TRUE
             {
-                SetProcessDpiAwareness(PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE)
+                SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
                     .ok()
                     .ok();
             }

@@ -1,6 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    DisplayDevices::*, Gdi::*, HiDpi::*, MenusAndResources::*, Shell::*, SystemServices::*,
-    WindowsAndMessaging::*,
+    UI::DisplayDevices::*, Graphics::Gdi::*, UI::HiDpi::*, UI::MenusAndResources::*, UI::Shell::*, System::SystemServices::*,
+    UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -31,7 +31,7 @@ pub trait Style {
     fn value(&self) -> u32;
 
     fn is_borderless(&self) -> bool {
-        self.value() == WINDOW_STYLE::WS_POPUP.0
+        self.value() == WS_POPUP.0
     }
 }
 
@@ -40,7 +40,7 @@ pub struct BorderlessStyle;
 
 impl Style for BorderlessStyle {
     fn value(&self) -> u32 {
-        WINDOW_STYLE::WS_POPUP.0
+        WS_POPUP.0
     }
 }
 
@@ -50,12 +50,12 @@ pub struct WindowStyle(u32);
 impl WindowStyle {
     pub fn default() -> Self {
         Self(
-            WINDOW_STYLE::WS_OVERLAPPED.0
-                | WINDOW_STYLE::WS_CAPTION.0
-                | WINDOW_STYLE::WS_SYSMENU.0
-                | WINDOW_STYLE::WS_THICKFRAME.0
-                | WINDOW_STYLE::WS_MINIMIZEBOX.0
-                | WINDOW_STYLE::WS_MAXIMIZEBOX.0,
+            WS_OVERLAPPED.0
+                | WS_CAPTION.0
+                | WS_SYSMENU.0
+                | WS_THICKFRAME.0
+                | WS_MINIMIZEBOX.0
+                | WS_MAXIMIZEBOX.0,
         )
     }
 
@@ -65,33 +65,33 @@ impl WindowStyle {
 
     pub fn resizable(mut self, resizable: bool) -> Self {
         if resizable {
-            self.0 |= WINDOW_STYLE::WS_THICKFRAME.0;
+            self.0 |= WS_THICKFRAME.0;
         } else {
-            self.0 &= !WINDOW_STYLE::WS_THICKFRAME.0;
+            self.0 &= !WS_THICKFRAME.0;
         }
         self
     }
 
     pub fn has_minimize_box(mut self, has_minimize_box: bool) -> Self {
         if has_minimize_box {
-            self.0 |= WINDOW_STYLE::WS_MINIMIZEBOX.0;
+            self.0 |= WS_MINIMIZEBOX.0;
         } else {
-            self.0 &= !WINDOW_STYLE::WS_MINIMIZEBOX.0;
+            self.0 &= !WS_MINIMIZEBOX.0;
         }
         self
     }
 
     pub fn has_maximize_box(mut self, has_maximize_box: bool) -> Self {
         if has_maximize_box {
-            self.0 |= WINDOW_STYLE::WS_MAXIMIZEBOX.0;
+            self.0 |= WS_MAXIMIZEBOX.0;
         } else {
-            self.0 &= !WINDOW_STYLE::WS_MAXIMIZEBOX.0;
+            self.0 &= !WS_MAXIMIZEBOX.0;
         }
         self
     }
 
     pub fn is_borderless(&self) -> bool {
-        self.value() == WINDOW_STYLE::WS_POPUP.0
+        self.value() == WS_POPUP.0
     }
 }
 
@@ -108,14 +108,14 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
         let class_name = WINDOW_CLASS_NAME.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
         let wc = WNDCLASSEXW {
             cbSize: std::mem::size_of::<WNDCLASSEXW>() as _,
-            style: WNDCLASS_STYLES(WNDCLASS_STYLES::CS_VREDRAW.0 | WNDCLASS_STYLES::CS_HREDRAW.0),
+            style: WNDCLASS_STYLES(CS_VREDRAW.0 | CS_HREDRAW.0),
             lpfnWndProc: Some(window_proc::<T>),
             cbClsExtra: 0,
             cbWndExtra: 0,
-            hInstance: HINSTANCE(GetModuleHandleW(PWSTR::NULL)),
+            hInstance: GetModuleHandleW(PWSTR::NULL),
             hIcon: HICON::NULL,
             hCursor: LoadCursorW(HINSTANCE::NULL, IDC_ARROW),
-            hbrBackground: HBRUSH(GetStockObject(GET_STOCK_OBJECT_FLAGS::WHITE_BRUSH).0),
+            hbrBackground: HBRUSH(GetStockObject(WHITE_BRUSH).0),
             lpszMenuName: PWSTR::NULL,
             lpszClassName: PWSTR(class_name.as_ptr() as _),
             hIconSm: HICON::NULL,
@@ -288,7 +288,7 @@ where
             let dpi = get_dpi_from_point(self.position);
             let inner_size = self.inner_size.to_physical(dpi);
             let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
-            let hinst = HINSTANCE(GetModuleHandleW(PWSTR::NULL));
+            let hinst = GetModuleHandleW(PWSTR::NULL);
             let hwnd = CreateWindowExW(
                 WINDOW_EX_STYLE(0),
                 WINDOW_CLASS_NAME,
@@ -453,13 +453,13 @@ where
             let dpi = self.parent.dpi();
             let position = self.position.to_physical(dpi as i32);
             let size = self.size.to_physical(dpi);
-            let rc = adjust_window_rect(size, WINDOW_STYLE::WS_CHILD.0, 0, dpi);
-            let hinst = HINSTANCE(GetModuleHandleW(PWSTR::NULL));
+            let rc = adjust_window_rect(size, WS_CHILD.0, 0, dpi);
+            let hinst = GetModuleHandleW(PWSTR::NULL);
             let hwnd = CreateWindowExW(
                 WINDOW_EX_STYLE(0),
                 WINDOW_CLASS_NAME,
                 PWSTR::NULL,
-                WINDOW_STYLE::WS_CHILD,
+                WS_CHILD,
                 position.x,
                 position.y,
                 (rc.right - rc.left) as i32,
@@ -476,7 +476,7 @@ where
                 hwnd,
                 WindowState {
                     title: String::new(),
-                    style: WINDOW_STYLE::WS_CHILD.0,
+                    style: WS_CHILD.0,
                     set_position: (position.x, position.y),
                     set_inner_size: size,
                     enabled_ime: self.parent.is_enabled_ime(),
@@ -611,13 +611,13 @@ impl Window {
 
     pub fn show(&self) {
         unsafe {
-            ShowWindowAsync(self.hwnd.0, SHOW_WINDOW_CMD::SW_SHOW.0 as _);
+            ShowWindowAsync(self.hwnd.0, SW_SHOW.0 as _);
         }
     }
 
     pub fn hide(&self) {
         unsafe {
-            ShowWindowAsync(self.hwnd.0, SHOW_WINDOW_CMD::SW_HIDE.0 as _);
+            ShowWindowAsync(self.hwnd.0, SW_HIDE.0 as _);
         }
     }
 
@@ -627,7 +627,7 @@ impl Window {
                 self.hwnd.0,
                 std::ptr::null(),
                 HRGN::NULL,
-                REDRAW_WINDOW_FLAGS::RDW_INTERNALPAINT,
+                RDW_INTERNALPAINT,
             );
         }
     }
@@ -729,7 +729,7 @@ impl Eq for Window {}
 unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         RawWindowHandle::Windows(WindowsHandle {
-            hinstance: unsafe { GetModuleHandleW(PWSTR::NULL) as _ },
+            hinstance: unsafe { GetModuleHandleW(PWSTR::NULL).0 as _ },
             hwnd: self.hwnd.0 .0 as _,
             ..WindowsHandle::empty()
         })

@@ -1,5 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    DisplayDevices::*, Gdi::*, SystemServices::*, WindowsAndMessaging::*,
+    UI::DisplayDevices::*, Graphics::Gdi::*, System::SystemServices::*, UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 
@@ -45,7 +45,7 @@ extern "system" fn get_monitors_proc(
 /// Return monitors info.
 pub fn get_monitors() -> Vec<Monitor> {
     unsafe {
-        let len = GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CMONITORS) as usize;
+        let len = GetSystemMetrics(SM_CMONITORS) as usize;
         let mut v = Vec::with_capacity(len);
         EnumDisplayMonitors(
             HDC::NULL,
@@ -65,7 +65,7 @@ pub fn monitor_from_point(point: ScreenPosition) -> Option<Monitor> {
                 x: point.x,
                 y: point.y,
             },
-            MONITOR_FROM_FLAGS::MONITOR_DEFAULTTONULL,
+            MONITOR_DEFAULTTONULL,
         );
         if hmonitor == HMONITOR::NULL {
             return None;
@@ -96,7 +96,7 @@ mod tests {
         unsafe {
             assert_eq!(
                 monitors.len(),
-                GetSystemMetrics(SYSTEM_METRICS_INDEX::SM_CMONITORS) as usize
+                GetSystemMetrics(SM_CMONITORS) as usize
             );
         }
     }

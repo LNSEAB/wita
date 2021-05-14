@@ -1,6 +1,6 @@
 //! An IME composition string and a candidate list
 
-use crate::bindings::Windows::Win32::{DisplayDevices::*, Intl::*, WindowsAndMessaging::*};
+use crate::bindings::Windows::Win32::{UI::DisplayDevices::*, Globalization::*, UI::WindowsAndMessaging::*};
 use crate::geometry::*;
 
 /// Describes composition character attributes.
