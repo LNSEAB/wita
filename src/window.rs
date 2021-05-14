@@ -48,21 +48,19 @@ impl Style for BorderlessStyle {
 pub struct WindowStyle(u32);
 
 impl WindowStyle {
-    pub fn default() -> Self {
+    #[inline]
+    pub fn dialog() -> Self {
         Self(
-            WS_OVERLAPPED.0
-                | WS_CAPTION.0
-                | WS_SYSMENU.0
-                | WS_THICKFRAME.0
-                | WS_MINIMIZEBOX.0
-                | WS_MAXIMIZEBOX.0,
+            WS_OVERLAPPED.0 | WS_CAPTION.0 | WS_SYSMENU.0
         )
     }
 
+    #[inline]
     pub fn borderless() -> BorderlessStyle {
         BorderlessStyle
     }
 
+    #[inline]
     pub fn resizable(mut self, resizable: bool) -> Self {
         if resizable {
             self.0 |= WS_THICKFRAME.0;
@@ -72,6 +70,7 @@ impl WindowStyle {
         self
     }
 
+    #[inline]
     pub fn has_minimize_box(mut self, has_minimize_box: bool) -> Self {
         if has_minimize_box {
             self.0 |= WS_MINIMIZEBOX.0;
@@ -81,6 +80,7 @@ impl WindowStyle {
         self
     }
 
+    #[inline]
     pub fn has_maximize_box(mut self, has_maximize_box: bool) -> Self {
         if has_maximize_box {
             self.0 |= WS_MAXIMIZEBOX.0;
@@ -90,8 +90,23 @@ impl WindowStyle {
         self
     }
 
+    #[inline]
     pub fn is_borderless(&self) -> bool {
         self.value() == WS_POPUP.0
+    }
+}
+
+impl Default for WindowStyle {
+    #[inline]
+    fn default() -> Self {
+        Self(
+            WS_OVERLAPPED.0
+                | WS_CAPTION.0
+                | WS_SYSMENU.0
+                | WS_THICKFRAME.0
+                | WS_MINIMIZEBOX.0
+                | WS_MAXIMIZEBOX.0,
+        )
     }
 }
 
@@ -143,6 +158,7 @@ pub struct WindowBuilder<Ti = (), S = ()> {
     children: Vec<Window>,
     accept_drag_files: bool,
     icon: Option<Icon>,
+    no_redirection_bitmap: bool,
     #[cfg(feature = "raw_input")]
     raw_input_window_state: raw_input::WindowState,
 }
@@ -163,6 +179,7 @@ impl WindowBuilder<(), ()> {
             children: Vec::new(),
             accept_drag_files: false,
             icon: None,
+            no_redirection_bitmap: false,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: raw_input::WindowState::Foreground,
         }
@@ -184,6 +201,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            no_redirection_bitmap: self.no_redirection_bitmap,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -208,6 +226,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            no_redirection_bitmap: self.no_redirection_bitmap,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -271,6 +290,11 @@ impl<Ti, S> WindowBuilder<Ti, S> {
         self
     }
 
+    pub fn no_redirection_bitmap(mut self, enable: bool) -> WindowBuilder<Ti, S> {
+        self.no_redirection_bitmap = enable;
+        self
+    }
+
     #[cfg(feature = "raw_input")]
     pub fn raw_input_window_state(mut self, state: raw_input::WindowState) -> WindowBuilder<Ti, S> {
         self.raw_input_window_state = state;
@@ -293,7 +317,11 @@ where
             let rc = adjust_window_rect(inner_size, self.style, 0, dpi);
             let hinst = GetModuleHandleW(PWSTR::NULL);
             let hwnd = CreateWindowExW(
-                WINDOW_EX_STYLE(0),
+                if self.no_redirection_bitmap {
+                    WS_EX_NOREDIRECTIONBITMAP
+                } else {
+                    WINDOW_EX_STYLE(0)
+                },
                 WINDOW_CLASS_NAME,
                 self.title.as_ref(),
                 WINDOW_STYLE(self.style),

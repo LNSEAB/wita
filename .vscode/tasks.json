@@ -278,6 +278,26 @@
 				},
 				"cwd": "${workspaceFolder}/examples/inner_window"
 			}
+		},
+		{
+			"label": "build no_redirection_bitmap",
+			"type": "cargo",
+			"command": "build",
+			"args": ["--example", "no_redirection_bitmap"],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+			},
+			"options": {
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/c"]
+				},
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }

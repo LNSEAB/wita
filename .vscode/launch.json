@@ -182,6 +182,19 @@
 			"console": "internalConsole",
 			"preLaunchTask": "build inner_window",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "no_rediretion_bitmap",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/no_redirection_bitmap.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "internalConsole",
+			"preLaunchTask": "build no_redirection_bitmap",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }
