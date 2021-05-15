@@ -118,7 +118,7 @@ fn key_input<T: EventHandler + 'static>(
     call_handler(|eh: &mut T, _| {
         eh.key_input(
             window,
-            KeyCode::new(as_virtual_key(wparam.0 as i32), scan_code),
+            KeyCode::new(as_virtual_key(wparam.0 as u32), scan_code),
             state,
             (lparam.0 >> 30) & 0x01 != 0,
         );

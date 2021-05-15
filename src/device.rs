@@ -71,19 +71,25 @@ pub enum VirtualKey {
     Other(u32),
 }
 
+impl std::fmt::Display for VirtualKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            Self::Char(c) => write!(f, "{}", c.to_ascii_uppercase()),
+            Self::NumPad(n) => write!(f, "NumPad{}", n),
+            Self::F(n) => write!(f, "F{}", n),
+            Self::Other(n) => write!(f, "Other{}", n),
+            k => write!(f, "{:?}", k),
+        }
+    }
+}
+
 #[cfg(feature = "serde")]
 impl Serialize for VirtualKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match *self {
-            Self::Char(c) => serializer.serialize_char(c.to_ascii_lowercase()),
-            Self::NumPad(n) => serializer.serialize_str(&format!("numpad{}", n)),
-            Self::F(n) => serializer.serialize_str(&format!("f{}", n)),
-            Self::Other(n) => serializer.serialize_str(&format!("other{}", n)),
-            k => serializer.serialize_str(&format!("{:?}", k).to_ascii_lowercase()),
-        }
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 
@@ -103,40 +109,40 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
         E: serde::de::Error,
     {
         match v {
-            "esc" => Ok(VirtualKey::Esc),
-            "tab" => Ok(VirtualKey::Tab),
-            "capslock" => Ok(VirtualKey::CapsLock),
-            "shift" => Ok(VirtualKey::Shift),
-            "ctrl" => Ok(VirtualKey::Ctrl),
-            "alt" => Ok(VirtualKey::Alt),
-            "backspace" => Ok(VirtualKey::BackSpace),
-            "enter" => Ok(VirtualKey::Enter),
-            "space" => Ok(VirtualKey::Space),
-            "printscreen" => Ok(VirtualKey::PrintScreen),
-            "screenlock" => Ok(VirtualKey::ScrollLock),
-            "pause" => Ok(VirtualKey::Pause),
-            "insert" => Ok(VirtualKey::Insert),
-            "delete" => Ok(VirtualKey::Delete),
-            "home" => Ok(VirtualKey::Home),
-            "end" => Ok(VirtualKey::End),
-            "pageup" => Ok(VirtualKey::PageUp),
-            "pagedown" => Ok(VirtualKey::PageDown),
-            "up" => Ok(VirtualKey::Up),
-            "down" => Ok(VirtualKey::Down),
-            "left" => Ok(VirtualKey::Left),
-            "right" => Ok(VirtualKey::Right),
-            "numlock" => Ok(VirtualKey::NumLock),
-            "numadd" => Ok(VirtualKey::NumAdd),
-            "numsub" => Ok(VirtualKey::NumSub),
-            "nummul" => Ok(VirtualKey::NumMul),
-            "numdiv" => Ok(VirtualKey::NumDiv),
-            "numdecimal" => Ok(VirtualKey::NumDecimal),
-            "lshift" => Ok(VirtualKey::LShift),
-            "rshift" => Ok(VirtualKey::RShift),
-            "lctrl" => Ok(VirtualKey::LCtrl),
-            "rctrl" => Ok(VirtualKey::RCtrl),
-            "lalt" => Ok(VirtualKey::LAlt),
-            "ralt" => Ok(VirtualKey::RAlt),
+            "Esc" => Ok(VirtualKey::Esc),
+            "Tab" => Ok(VirtualKey::Tab),
+            "CapsLock" => Ok(VirtualKey::CapsLock),
+            "Shift" => Ok(VirtualKey::Shift),
+            "Ctrl" => Ok(VirtualKey::Ctrl),
+            "Alt" => Ok(VirtualKey::Alt),
+            "BackSpace" => Ok(VirtualKey::BackSpace),
+            "Enter" => Ok(VirtualKey::Enter),
+            "Space" => Ok(VirtualKey::Space),
+            "PrintScreen" => Ok(VirtualKey::PrintScreen),
+            "ScrollLock" => Ok(VirtualKey::ScrollLock),
+            "Pause" => Ok(VirtualKey::Pause),
+            "Insert" => Ok(VirtualKey::Insert),
+            "Delete" => Ok(VirtualKey::Delete),
+            "Home" => Ok(VirtualKey::Home),
+            "End" => Ok(VirtualKey::End),
+            "PageUp" => Ok(VirtualKey::PageUp),
+            "PageDown" => Ok(VirtualKey::PageDown),
+            "Up" => Ok(VirtualKey::Up),
+            "Down" => Ok(VirtualKey::Down),
+            "Left" => Ok(VirtualKey::Left),
+            "Right" => Ok(VirtualKey::Right),
+            "NumLock" => Ok(VirtualKey::NumLock),
+            "NumAdd" => Ok(VirtualKey::NumAdd),
+            "NumSub" => Ok(VirtualKey::NumSub),
+            "NumMul" => Ok(VirtualKey::NumMul),
+            "NumDiv" => Ok(VirtualKey::NumDiv),
+            "NumDecimal" => Ok(VirtualKey::NumDecimal),
+            "LShift" => Ok(VirtualKey::LShift),
+            "RShift" => Ok(VirtualKey::RShift),
+            "LCtrl" => Ok(VirtualKey::LCtrl),
+            "RCtrl" => Ok(VirtualKey::RCtrl),
+            "LAlt" => Ok(VirtualKey::LAlt),
+            "RAlt" => Ok(VirtualKey::RAlt),
             _ if v.len() == 1 => {
                 let c = v.chars().next().unwrap();
                 if !c.is_ascii_control() {
@@ -145,17 +151,17 @@ impl<'de> Visitor<'de> for VirtualKeyVisitor {
                     Err(serde::de::Error::custom("invalid value"))
                 }
             }
-            _ if v.starts_with("numpad") => Ok(VirtualKey::NumPad(
+            _ if v.starts_with("NumPad") => Ok(VirtualKey::NumPad(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
             )),
-            _ if v.starts_with('f') => Ok(VirtualKey::F(
+            _ if v.starts_with('F') => Ok(VirtualKey::F(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
             )),
-            _ if v.starts_with("other") => Ok(VirtualKey::Other(
+            _ if v.starts_with("Other") => Ok(VirtualKey::Other(
                 v.trim_matches(|c| !char::is_numeric(c))
                     .parse()
                     .map_err(|_| serde::de::Error::custom("invalid value"))?,
@@ -193,10 +199,10 @@ impl KeyCode {
     }
 }
 
-pub(crate) fn as_virtual_key(k: i32) -> VirtualKey {
+pub fn as_virtual_key(k: u32) -> VirtualKey {
     const ZERO: u32 = b'0' as _;
     const Z: u32 = b'Z' as _;
-    match k as u32 {
+    match k {
         v @ ZERO..=Z => VirtualKey::Char((v as u8).into()),
         VK_ESCAPE => VirtualKey::Esc,
         VK_TAB => VirtualKey::Tab,
@@ -233,25 +239,207 @@ pub(crate) fn as_virtual_key(k: i32) -> VirtualKey {
         VK_RCONTROL => VirtualKey::RCtrl,
         VK_LMENU => VirtualKey::LAlt,
         VK_RMENU => VirtualKey::RAlt,
+        VK_OEM_MINUS => VirtualKey::Char('-'),
+        VK_OEM_PLUS => VirtualKey::Char(';'),
+        VK_OEM_COMMA => VirtualKey::Char(','),
+        VK_OEM_PERIOD => VirtualKey::Char('.'),
+        VK_OEM_1 => VirtualKey::Char(':'),
+        VK_OEM_2 => VirtualKey::Char('/'),
+        VK_OEM_3 => VirtualKey::Char('@'),
+        VK_OEM_4 => VirtualKey::Char('['),
+        VK_OEM_5 => VirtualKey::Char('\\'),
+        VK_OEM_6 => VirtualKey::Char(']'),
+        VK_OEM_7 => VirtualKey::Char('^'),
+        VK_OEM_102 => VirtualKey::Char('_'),
         v @ VK_F1..=VK_F24 => VirtualKey::F((v - VK_F1 + 1) as u8),
         v => VirtualKey::Other(v as u32),
     }
 }
 
-/// Get current key states.
-pub fn keyboard_state() -> Vec<VirtualKey> {
+pub fn to_raw_virtual_key(k: VirtualKey) -> u32 {
+    const ZERO: char = '0' as _;
+    const Z: char = 'Z' as _;
+    match k {
+        VirtualKey::Char(c) if (ZERO..=Z).contains(&c) => c as u32,
+        VirtualKey::Esc => VK_ESCAPE,
+        VirtualKey::Tab => VK_TAB,
+        VirtualKey::CapsLock => VK_CAPITAL,
+        VirtualKey::Shift => VK_SHIFT,
+        VirtualKey::Ctrl => VK_CONTROL,
+        VirtualKey::Alt => VK_MENU,
+        VirtualKey::BackSpace => VK_BACK,
+        VirtualKey::Enter => VK_RETURN,
+        VirtualKey::Space => VK_SPACE,
+        VirtualKey::PrintScreen => VK_SNAPSHOT,
+        VirtualKey::ScrollLock => VK_SCROLL,
+        VirtualKey::Pause => VK_PAUSE,
+        VirtualKey::Insert => VK_INSERT,
+        VirtualKey::Delete => VK_DELETE,
+        VirtualKey::Home => VK_HOME,
+        VirtualKey::End => VK_END,
+        VirtualKey::PageUp => VK_PRIOR,
+        VirtualKey::PageDown => VK_NEXT,
+        VirtualKey::Up => VK_UP,
+        VirtualKey::Down => VK_DOWN,
+        VirtualKey::Left => VK_LEFT,
+        VirtualKey::Right => VK_RIGHT,
+        VirtualKey::NumLock => VK_NUMLOCK,
+        VirtualKey::NumPad(n) => VK_NUMPAD0 + n as u32, 
+        VirtualKey::NumAdd => VK_ADD,
+        VirtualKey::NumSub => VK_SUBTRACT,
+        VirtualKey::NumMul => VK_MULTIPLY,
+        VirtualKey::NumDiv => VK_DIVIDE,
+        VirtualKey::NumDecimal => VK_DECIMAL,
+        VirtualKey::LShift => VK_LSHIFT,
+        VirtualKey::RShift => VK_RSHIFT,
+        VirtualKey::LCtrl => VK_LCONTROL,
+        VirtualKey::RCtrl => VK_RCONTROL,
+        VirtualKey::LAlt => VK_LMENU,
+        VirtualKey::RAlt => VK_RMENU,
+        VirtualKey::Char('-') => VK_OEM_MINUS,
+        VirtualKey::Char(';') => VK_OEM_PLUS,
+        VirtualKey::Char(',') => VK_OEM_COMMA,
+        VirtualKey::Char('.') => VK_OEM_PERIOD,
+        VirtualKey::Char(':') => VK_OEM_1,
+        VirtualKey::Char('/') => VK_OEM_2,
+        VirtualKey::Char('@') => VK_OEM_3,
+        VirtualKey::Char('[') => VK_OEM_4,
+        VirtualKey::Char('\\') => VK_OEM_5,
+        VirtualKey::Char(']') => VK_OEM_6,
+        VirtualKey::Char('^') => VK_OEM_7,
+        VirtualKey::Char('_') => VK_OEM_102,
+        VirtualKey::F(n) => VK_F1 + n as u32 - 1,
+        VirtualKey::Other(x) => x,
+        _ => unreachable!(),
+    }
+}
+
+pub fn get_key_state(k: VirtualKey) -> bool {
     unsafe {
-        let mut ks = [0u8; 256];
-        GetKeyboardState(ks.as_mut_ptr());
-        ks.iter()
-            .enumerate()
-            .filter_map(|(i, k)| {
-                if (k & 0x80) != 0 {
-                    Some(as_virtual_key(i as i32))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>()
+        GetKeyState(to_raw_virtual_key(k) as _) & 0x80 != 0
+    }
+}
+
+/// Get current key states.
+pub fn keyboard_state(keys: &mut Vec<VirtualKey>) {
+    let mut buffer = [0u8; 256];
+    unsafe {
+        GetKeyboardState(buffer.as_mut_ptr());
+    }
+    keys.clear();
+    for (i, k) in buffer.iter().enumerate() {
+        if (k & 0x80) != 0 {
+            keys.push(as_virtual_key(i as u32));
+        } 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn serde_test() {
+        fn se_de(k: VirtualKey) -> serde_json::Result<bool> {
+            let se = serde_json::to_string(&k)?;
+            Ok(serde_json::from_str::<VirtualKey>(&se)? == k)
+        }
+
+        assert!(se_de(VirtualKey::Char('A')).unwrap());
+        assert!(se_de(VirtualKey::NumPad(0)).unwrap());
+        assert!(se_de(VirtualKey::F(1)).unwrap());
+        assert!(se_de(VirtualKey::Other(230)).unwrap());
+        let vks = [
+            VirtualKey::Esc,
+            VirtualKey::Tab,
+            VirtualKey::CapsLock,
+            VirtualKey::Shift,
+            VirtualKey::Ctrl,
+            VirtualKey::Alt,
+            VirtualKey::BackSpace,
+            VirtualKey::Enter,
+            VirtualKey::Space,
+            VirtualKey::PrintScreen,
+            VirtualKey::ScrollLock,
+            VirtualKey::Pause,
+            VirtualKey::Insert,
+            VirtualKey::Delete,
+            VirtualKey::Home,
+            VirtualKey::End,
+            VirtualKey::PageUp,
+            VirtualKey::PageDown,
+            VirtualKey::Up,
+            VirtualKey::Down,
+            VirtualKey::Left,
+            VirtualKey::Right,
+            VirtualKey::NumLock,
+            VirtualKey::NumAdd,
+            VirtualKey::NumSub,
+            VirtualKey::NumMul,
+            VirtualKey::NumDiv,
+            VirtualKey::NumDecimal,
+            VirtualKey::LShift,
+            VirtualKey::RShift,
+            VirtualKey::LCtrl,
+            VirtualKey::RCtrl,
+            VirtualKey::LAlt,
+            VirtualKey::RAlt,
+        ];
+        for k in &vks {
+            assert!(se_de(*k).unwrap());
+        }
+    }
+
+    #[test]
+    fn convert_virtual_key() {
+        for c in '0'..='Z' {
+            assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::Char(c))) == VirtualKey::Char(c));
+        }
+        for i in 0..=9 {
+            assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::NumPad(i))) == VirtualKey::NumPad(i));
+        }
+        for i in 1..=24 {
+            assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::F(i))) == VirtualKey::F(i));
+        }
+        let vks = [
+            VirtualKey::Esc,
+            VirtualKey::Tab,
+            VirtualKey::CapsLock,
+            VirtualKey::Shift,
+            VirtualKey::Ctrl,
+            VirtualKey::Alt,
+            VirtualKey::BackSpace,
+            VirtualKey::Enter,
+            VirtualKey::Space,
+            VirtualKey::PrintScreen,
+            VirtualKey::ScrollLock,
+            VirtualKey::Pause,
+            VirtualKey::Insert,
+            VirtualKey::Delete,
+            VirtualKey::Home,
+            VirtualKey::End,
+            VirtualKey::PageUp,
+            VirtualKey::PageDown,
+            VirtualKey::Up,
+            VirtualKey::Down,
+            VirtualKey::Left,
+            VirtualKey::Right,
+            VirtualKey::NumLock,
+            VirtualKey::NumAdd,
+            VirtualKey::NumSub,
+            VirtualKey::NumMul,
+            VirtualKey::NumDiv,
+            VirtualKey::NumDecimal,
+            VirtualKey::LShift,
+            VirtualKey::RShift,
+            VirtualKey::LCtrl,
+            VirtualKey::RCtrl,
+            VirtualKey::LAlt,
+            VirtualKey::RAlt,
+        ];
+        for &k in &vks {
+            assert!(as_virtual_key(to_raw_virtual_key(k)) == k);
+        }
     }
 }

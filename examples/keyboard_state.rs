@@ -12,7 +12,9 @@ impl Application {
 impl wita::EventHandler for Application {
     fn key_input(&mut self, _: &wita::Window, _: wita::KeyCode, state: wita::KeyState, _: bool) {
         if state == wita::KeyState::Pressed {
-            let ks = wita::keyboard_state();
+            let mut ks = vec![];
+            wita::keyboard_state(&mut ks);
+            dbg!(wita::get_key_state(wita::VirtualKey::Char('A')));
             println!("{:?}", ks);
         }
     }
