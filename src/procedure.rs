@@ -541,11 +541,13 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     w if w == UserMessage::AcceptDragFiles as usize => {
                         DragAcceptFiles(hwnd, BOOL(lparam.0 as _));
                     }
-                    _ => unreachable!(),
+                    _ => {
+                        return call_other::<T>(hwnd, msg, wparam, lparam);
+                    },
                 }
                 LRESULT(0)
             }
-            _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+            _ => call_other::<T>(hwnd, msg, wparam, lparam),
         }
     });
     ret.unwrap_or_else(|e| {

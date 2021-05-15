@@ -1,5 +1,8 @@
-use crate::bindings::Windows::Win32::UI::WindowsAndMessaging::*;
-use crate::{device::*, event::EventHandler, window::LocalWindow};
+use crate::bindings::Windows::Win32::{
+    UI::WindowsAndMessaging::*,
+    System::SystemServices::*,
+};
+use crate::{device::*, event::EventHandler, event::OtherParams, window::LocalWindow};
 use std::any::Any;
 use std::cell::RefCell;
 use std::panic::resume_unwind;
@@ -147,6 +150,40 @@ where
         }
     }
 }
+
+#[inline]
+pub(crate) fn call_other<T>(hwnd: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT
+where
+    T: EventHandler + 'static,
+{
+    let p = CONTEXT.with(|ctx| *ctx.borrow());
+    unsafe {
+        let ctx = &mut *p;
+        if ctx.event_handler.is_some() {
+            let event_handler = ctx
+                .event_handler
+                .as_mut()
+                .unwrap()
+                .downcast_mut::<T>()
+                .unwrap();
+            let ret = event_handler.other(&OtherParams {
+                hwnd,
+                message,
+                wparam,
+                lparam,
+            });
+            if let Some(ret) = ret {
+                LRESULT(ret)
+            } else {
+                DefWindowProcW(hwnd, message, wparam, lparam)
+            }
+        } else {
+            DefWindowProcW(hwnd, message, wparam, lparam)
+        }
+    }
+}
+
+
 
 #[inline]
 pub fn set_unwind(e: Box<dyn Any + Send>) {

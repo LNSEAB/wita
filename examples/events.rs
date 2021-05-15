@@ -103,6 +103,11 @@ impl wita::EventHandler for Application {
     fn ime_end_composition(&mut self, _: &wita::Window, s: Option<&str>) {
         println!("ime end composition: {:?}", s);
     }
+
+    fn other(&mut self, params: &wita::OtherParams) -> Option<i32> {
+        println!("other: {:?}", params);
+        None
+    }
 }
 
 fn main() {

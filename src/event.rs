@@ -1,5 +1,15 @@
 #![allow(unused_variables)]
 
+use crate::bindings::Windows::Win32::UI::WindowsAndMessaging::*;
+
+#[derive(Debug)]
+pub struct OtherParams {
+    pub hwnd: HWND,
+    pub message: u32,
+    pub wparam: WPARAM,
+    pub lparam: LPARAM,
+}
+
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
 use crate::{device::*, geometry::*, ime::*, window::Window};
@@ -108,5 +118,9 @@ pub trait EventHandler {
         device: &raw_input::Device,
         state: raw_input::DeviceChangeState,
     ) {
+    }
+
+    fn other(&mut self, params: &OtherParams) -> Option<i32> {
+        None
     }
 }
