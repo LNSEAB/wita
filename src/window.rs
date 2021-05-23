@@ -145,7 +145,7 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
 }
 
 /// The object to build a window.
-pub struct WindowBuilder<Ti = (), S = ()> {
+pub struct WindowBuilder<Ti, S> {
     title: Ti,
     position: ScreenPosition,
     inner_size: S,
