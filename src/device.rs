@@ -1,4 +1,8 @@
-use crate::bindings::Windows::Win32::{UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*};
+use crate::bindings::Windows::Win32::{
+    System::SystemServices::{HINSTANCE, PWSTR},
+    UI::KeyboardAndMouseInput::*,
+    UI::WindowsAndMessaging::*,
+};
 use crate::geometry::*;
 #[cfg(feature = "serde")]
 use serde::{de::*, *};
@@ -284,7 +288,7 @@ pub fn to_raw_virtual_key(k: VirtualKey) -> u32 {
         VirtualKey::Left => VK_LEFT,
         VirtualKey::Right => VK_RIGHT,
         VirtualKey::NumLock => VK_NUMLOCK,
-        VirtualKey::NumPad(n) => VK_NUMPAD0 + n as u32, 
+        VirtualKey::NumPad(n) => VK_NUMPAD0 + n as u32,
         VirtualKey::NumAdd => VK_ADD,
         VirtualKey::NumSub => VK_SUBTRACT,
         VirtualKey::NumMul => VK_MULTIPLY,
@@ -315,9 +319,7 @@ pub fn to_raw_virtual_key(k: VirtualKey) -> u32 {
 }
 
 pub fn get_key_state(k: VirtualKey) -> bool {
-    unsafe {
-        GetKeyState(to_raw_virtual_key(k) as _) & 0x80 != 0
-    }
+    unsafe { GetKeyState(to_raw_virtual_key(k) as _) & 0x80 != 0 }
 }
 
 /// Get current key states.
@@ -330,7 +332,7 @@ pub fn keyboard_state(keys: &mut Vec<VirtualKey>) {
     for (i, k) in buffer.iter().enumerate() {
         if (k & 0x80) != 0 {
             keys.push(as_virtual_key(i as u32));
-        } 
+        }
     }
 }
 
@@ -397,7 +399,9 @@ mod tests {
             assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::Char(c))) == VirtualKey::Char(c));
         }
         for i in 0..=9 {
-            assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::NumPad(i))) == VirtualKey::NumPad(i));
+            assert!(
+                as_virtual_key(to_raw_virtual_key(VirtualKey::NumPad(i))) == VirtualKey::NumPad(i)
+            );
         }
         for i in 1..=24 {
             assert!(as_virtual_key(to_raw_virtual_key(VirtualKey::F(i))) == VirtualKey::F(i));
@@ -441,5 +445,58 @@ mod tests {
         for &k in &vks {
             assert!(as_virtual_key(to_raw_virtual_key(k)) == k);
         }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Cursor {
+    AppStarting,
+    Arrow,
+    Cross,
+    Hand,
+    Help,
+    IBeam,
+    No,
+    SizeAll,
+    SizeNESW,
+    SizeNS,
+    SizeNWSE,
+    SizeWE,
+    SizeUpArrow,
+    Wait,
+}
+
+impl Cursor {
+    pub(crate) fn name(&self) -> PWSTR {
+        match self {
+            Self::AppStarting => IDC_APPSTARTING,
+            Self::Arrow => IDC_ARROW,
+            Self::Cross => IDC_CROSS,
+            Self::Hand => IDC_HAND,
+            Self::Help => IDC_HELP,
+            Self::IBeam => IDC_IBEAM,
+            Self::No => IDC_NO,
+            Self::SizeAll => IDC_SIZEALL,
+            Self::SizeNESW => IDC_SIZENESW,
+            Self::SizeNS => IDC_SIZENS,
+            Self::SizeNWSE => IDC_SIZENWSE,
+            Self::SizeWE => IDC_SIZEWE,
+            Self::SizeUpArrow => IDC_UPARROW,
+            Self::Wait => IDC_WAIT,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn set(&self) {
+        unsafe {
+            SetCursor(LoadCursorW(HINSTANCE::NULL, self.name()));
+        }
+    }
+}
+
+impl Default for Cursor {
+    #[inline]
+    fn default() -> Self {
+        Self::Arrow
     }
 }

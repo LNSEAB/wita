@@ -176,8 +176,11 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                                 buttons: &state.mouse_buttons,
                             },
                         );
+                        
                     }
                 });
+                let wnd = handle.state.read().unwrap();
+                wnd.cursor.set();
                 LRESULT(0)
             }
             WM_MOUSELEAVE => {
@@ -543,7 +546,7 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                     }
                     _ => {
                         return call_other::<T>(hwnd, msg, wparam, lparam);
-                    },
+                    }
                 }
                 LRESULT(0)
             }

@@ -8,6 +8,7 @@ use crate::DEFAULT_DPI;
 use crate::{
     api::*,
     context::*,
+    device::Cursor,
     error::*,
     event::EventHandler,
     geometry::*,
@@ -50,9 +51,7 @@ pub struct WindowStyle(u32);
 impl WindowStyle {
     #[inline]
     pub fn dialog() -> Self {
-        Self(
-            WS_OVERLAPPED.0 | WS_CAPTION.0 | WS_SYSMENU.0
-        )
+        Self(WS_OVERLAPPED.0 | WS_CAPTION.0 | WS_SYSMENU.0)
     }
 
     #[inline]
@@ -132,7 +131,7 @@ pub(crate) fn register_class<T: EventHandler + 'static>() {
             cbWndExtra: 0,
             hInstance: GetModuleHandleW(PWSTR::NULL),
             hIcon: HICON::NULL,
-            hCursor: LoadCursorW(HINSTANCE::NULL, IDC_ARROW),
+            hCursor: HCURSOR::NULL,
             hbrBackground: HBRUSH(GetStockObject(WHITE_BRUSH).0),
             lpszMenuName: PWSTR::NULL,
             lpszClassName: PWSTR(class_name.as_ptr() as _),
@@ -158,6 +157,7 @@ pub struct WindowBuilder<Ti, S> {
     children: Vec<Window>,
     accept_drag_files: bool,
     icon: Option<Icon>,
+    cursor: Cursor,
     no_redirection_bitmap: bool,
     #[cfg(feature = "raw_input")]
     raw_input_window_state: raw_input::WindowState,
@@ -179,6 +179,7 @@ impl WindowBuilder<(), ()> {
             children: Vec::new(),
             accept_drag_files: false,
             icon: None,
+            cursor: Cursor::default(),
             no_redirection_bitmap: false,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: raw_input::WindowState::Foreground,
@@ -201,6 +202,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            cursor: self.cursor,
             no_redirection_bitmap: self.no_redirection_bitmap,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
@@ -226,6 +228,7 @@ impl<Ti, S> WindowBuilder<Ti, S> {
             children: self.children,
             accept_drag_files: self.accept_drag_files,
             icon: self.icon,
+            cursor: self.cursor,
             no_redirection_bitmap: self.no_redirection_bitmap,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
@@ -282,6 +285,11 @@ impl<Ti, S> WindowBuilder<Ti, S> {
 
     pub fn icon(mut self, icon: Icon) -> WindowBuilder<Ti, S> {
         self.icon = Some(icon);
+        self
+    }
+
+    pub fn cursor(mut self, cursor: Cursor) -> WindowBuilder<Ti, S> {
+        self.cursor = cursor;
         self
     }
 
@@ -350,8 +358,10 @@ where
                     ime_position: PhysicalPosition::new(0, 0),
                     children: self.children,
                     closed: false,
+                    cursor: self.cursor,
                 },
             );
+            self.cursor.set();
             let handle = window.handle.clone();
             if let Some(parent) = self.parent {
                 let mut state = parent.state.write().unwrap();
@@ -399,6 +409,7 @@ pub struct InnerWindowBuilder<W = (), P = (), S = ()> {
     visible_ime_composition_window: bool,
     visible_ime_candidate_window: bool,
     accept_drag_files: bool,
+    cursor: Cursor,
     #[cfg(feature = "raw_input")]
     raw_input_window_state: raw_input::WindowState,
 }
@@ -414,6 +425,7 @@ impl InnerWindowBuilder<(), (), ()> {
             visible_ime_composition_window: true,
             visible_ime_candidate_window: true,
             accept_drag_files: false,
+            cursor: Cursor::Arrow,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: raw_input::WindowState::Foreground,
         }
@@ -430,6 +442,7 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
+            cursor: self.cursor,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -444,6 +457,7 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
+            cursor: self.cursor,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -458,6 +472,7 @@ impl<W, P, S> InnerWindowBuilder<W, P, S> {
             visible_ime_composition_window: self.visible_ime_composition_window,
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drag_files: self.accept_drag_files,
+            cursor: self.cursor,
             #[cfg(feature = "raw_input")]
             raw_input_window_state: self.raw_input_window_state,
         }
@@ -515,6 +530,7 @@ where
                     visible_ime_candidate_window: self.visible_ime_candidate_window,
                     ime_position: PhysicalPosition::new(0, 0),
                     children: vec![],
+                    cursor: self.cursor,
                     closed: false,
                 },
             );
@@ -544,6 +560,7 @@ pub(crate) struct WindowState {
     pub ime_position: PhysicalPosition<i32>,
     pub children: Vec<Window>,
     pub closed: bool,
+    pub cursor: Cursor,
 }
 
 #[derive(Clone)]
@@ -737,6 +754,12 @@ impl Window {
                 LPARAM(if enabled { 1 } else { 0 }),
             );
         }
+    }
+
+    pub fn set_cursor(&self, cursor: Cursor) {
+        let mut state = self.state.write().unwrap();
+        state.cursor = cursor;
+        cursor.set();
     }
 
     pub fn raw_handle(&self) -> *mut std::ffi::c_void {

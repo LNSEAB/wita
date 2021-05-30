@@ -1,7 +1,4 @@
-use crate::bindings::Windows::Win32::{
-    UI::WindowsAndMessaging::*,
-    System::SystemServices::*,
-};
+use crate::bindings::Windows::Win32::{System::SystemServices::*, UI::WindowsAndMessaging::*};
 use crate::{device::*, event::EventHandler, event::OtherParams, window::LocalWindow};
 use std::any::Any;
 use std::cell::RefCell;
@@ -182,8 +179,6 @@ where
         }
     }
 }
-
-
 
 #[inline]
 pub fn set_unwind(e: Box<dyn Any + Send>) {

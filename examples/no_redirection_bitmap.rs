@@ -8,9 +8,7 @@ impl Application {
             .title("wita no redirection bitmap")
             .no_redirection_bitmap(true)
             .build()?;
-        Ok(Self {
-            frame: true,
-        })
+        Ok(Self { frame: true })
     }
 }
 

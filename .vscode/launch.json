@@ -195,6 +195,19 @@
 			"console": "internalConsole",
 			"preLaunchTask": "build no_redirection_bitmap",
 			"internalConsoleOptions": "openOnSessionStart",
+		},
+		{
+			"name": "cursor",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/debug/examples/cursor.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "internalConsole",
+			"preLaunchTask": "build cursor",
+			"internalConsoleOptions": "openOnSessionStart",
 		}
 	]
 }
