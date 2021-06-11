@@ -66,7 +66,6 @@
 //! [`raw_handle`]: struct.Window.html#method.raw_handle
 //!
 
-#[allow(warnings)]
 mod bindings {
     ::windows::include_bindings!();
 }
@@ -96,7 +95,7 @@ pub use monitor::*;
 pub use resource::*;
 pub use window::*;
 
-use bindings::Windows::Win32::{System::SystemServices::*, UI::WindowsAndMessaging::*};
+use bindings::Windows::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
 use context::*;
 
 /// The value is an unit in logical coordinates.

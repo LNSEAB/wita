@@ -1,5 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    Graphics::Gdi::*, System::SystemServices::*, UI::DisplayDevices::*, UI::WindowsAndMessaging::*,
+    Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 
@@ -38,7 +38,7 @@ extern "system" fn get_monitors_proc(
             size: PhysicalSize::new((rc.right - rc.left) as u32, (rc.bottom - rc.top) as u32),
             is_primary: (info.dwFlags & MONITORINFOF_PRIMARY) != 0,
         });
-        TRUE
+        true.into()
     }
 }
 

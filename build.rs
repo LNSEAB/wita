@@ -10,33 +10,32 @@ fn main() {
             EndPaint,
             GetStockObject,
             RedrawWindow,
-            MONITOR_DEFAULTTONULL,
-            MONITOR_DEFAULTTOPRIMARY,
             MONITORINFO,
             PAINTSTRUCT,
-            WHITE_BRUSH,
-            RDW_INTERNALPAINT,
         },
         Windows::Win32::UI::KeyboardAndMouseInput::*,
-        Windows::Win32::System::SystemServices::{
+        Windows::Win32::System::LibraryLoader::{
             GetModuleHandleW,
-            BOOL,
-            TRUE,
-            FALSE,
         },
         Windows::Win32::System::Memory::{
             LocalFree,
         },
-        Windows::Win32::UI::DisplayDevices::{
+        Windows::Win32::Foundation::{
             POINT,
+            SIZE,
             RECT,
+            WPARAM,
+            LPARAM,
+            BOOL,
+            PSTR,
+            PWSTR,
+            HWND,
+            HINSTANCE,
+            CloseHandle,
         },
         Windows::Win32::System::Diagnostics::Debug::{
             FormatMessageW,
             GetLastError,
-            FORMAT_MESSAGE_ALLOCATE_BUFFER,
-            FORMAT_MESSAGE_FROM_SYSTEM,
-            FORMAT_MESSAGE_IGNORE_INSERTS,
         },
         Windows::Win32::Globalization::*,
         Windows::Win32::UI::Shell::{
@@ -45,15 +44,7 @@ fn main() {
             DragQueryPoint,
             DragFinish
         },
-        Windows::Win32::UI::MenusAndResources::*,
-        Windows::Win32::UI::Controls::{
-            LR_SHARED,
-            LR_LOADFROMFILE,
-            WM_MOUSELEAVE,
-        },
-        Windows::Win32::System::WindowsProgramming::{
-            CloseHandle,
-        },
+        Windows::Win32::UI::Controls::WM_MOUSELEAVE,
         Windows::Win32::Storage::FileSystem::*,
         Windows::Win32::Devices::HumanInterfaceDevice::*,
     );

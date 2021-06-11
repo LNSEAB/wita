@@ -1,7 +1,5 @@
 use crate::bindings::Windows::Win32::{
-    System::SystemServices::{HINSTANCE, PWSTR},
-    UI::KeyboardAndMouseInput::*,
-    UI::WindowsAndMessaging::*,
+    Foundation::*, UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*,
 };
 use crate::geometry::*;
 #[cfg(feature = "serde")]

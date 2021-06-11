@@ -3,8 +3,8 @@
 //! To use, specify `"raw_input"` feature.
 
 use crate::bindings::Windows::Win32::{
-    Devices::HumanInterfaceDevice::*, Storage::FileSystem::*, System::SystemServices::*,
-    System::WindowsProgramming::*, UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*,
+    Devices::HumanInterfaceDevice::*, Foundation::*, Storage::FileSystem::*,
+    UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*,
 };
 use crate::context::call_handler;
 use crate::device::*;
@@ -471,7 +471,7 @@ pub(crate) fn register_devices(wnd: &Window, state: WindowState) {
             device.len() as _,
             size_of::<RAWINPUTDEVICE>() as _,
         );
-        if ret == FALSE {
+        if !ret.as_bool() {
             last_error!("RegisterRawInputDevices");
         }
         let device_list = get_device_list();

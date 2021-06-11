@@ -1,6 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    Graphics::Gdi::*, System::SystemServices::*, UI::DisplayDevices::*, UI::HiDpi::*,
-    UI::MenusAndResources::*, UI::Shell::*, UI::WindowsAndMessaging::*,
+    Foundation::*, Graphics::Gdi::*, System::LibraryLoader::*, UI::HiDpi::*, UI::Shell::*,
+    UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -371,7 +371,7 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, TRUE);
+                DragAcceptFiles(hwnd, true);
             }
             if let Some(icon) = self.icon {
                 let big = load_icon(&icon, hinst);
@@ -539,7 +539,7 @@ where
                 window.handle.show();
             }
             if self.accept_drag_files {
-                DragAcceptFiles(hwnd, TRUE);
+                DragAcceptFiles(hwnd, true);
             }
             #[cfg(feature = "raw_input")]
             raw_input::register_devices(&window.handle, self.raw_input_window_state);

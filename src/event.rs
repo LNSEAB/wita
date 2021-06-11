@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 
-use crate::bindings::Windows::Win32::UI::WindowsAndMessaging::*;
+use crate::bindings::Windows::Win32::Foundation::*;
 
 #[derive(Debug)]
 pub struct OtherParams {

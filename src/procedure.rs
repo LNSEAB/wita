@@ -1,7 +1,6 @@
 use crate::bindings::Windows::Win32::{
-    Globalization::*, Graphics::Gdi::*, System::SystemServices::*, UI::Controls::*,
-    UI::DisplayDevices::*, UI::HiDpi::*, UI::KeyboardAndMouseInput::*, UI::Shell::*,
-    UI::WindowsAndMessaging::*,
+    Foundation::*, Globalization::*, Graphics::Gdi::*, UI::Controls::WM_MOUSELEAVE, UI::HiDpi::*,
+    UI::KeyboardAndMouseInput::*, UI::Shell::*, UI::WindowsAndMessaging::*,
 };
 #[cfg(feature = "raw_input")]
 use crate::raw_input;
@@ -176,7 +175,6 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                                 buttons: &state.mouse_buttons,
                             },
                         );
-                        
                     }
                 });
                 let wnd = handle.state.read().unwrap();
