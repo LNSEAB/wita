@@ -14,7 +14,6 @@ pub fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
             &mut dpi_x,
             &mut _dpi_y,
         )
-        .ok()
         .ok();
         dpi_x
     }
@@ -41,7 +40,6 @@ pub fn enable_dpi_awareness() {
                 && !SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE).as_bool()
             {
                 SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
-                    .ok()
                     .ok();
             }
         });
