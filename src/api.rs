@@ -39,8 +39,7 @@ pub fn enable_dpi_awareness() {
             if !SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2).as_bool()
                 && !SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE).as_bool()
             {
-                SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
-                    .ok();
+                SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE).ok();
             }
         });
     }

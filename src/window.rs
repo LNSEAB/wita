@@ -720,6 +720,16 @@ impl Window {
         let position = position.to_physical(self.dpi() as i32);
         state.ime_position.x = position.x;
         state.ime_position.y = position.y;
+        let imc = ime::Imc::get(self.hwnd.0);
+        if state.visible_ime_composition_window {
+            imc.set_composition_window_position(state.ime_position);
+        }
+        if state.visible_ime_candidate_window {
+            imc.set_candidate_window_position(
+                state.ime_position,
+                state.visible_ime_composition_window,
+            );
+        }
     }
 
     pub fn is_enabled_ime(&self) -> bool {

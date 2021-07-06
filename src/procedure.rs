@@ -277,16 +277,18 @@ pub(crate) extern "system" fn window_proc<T: EventHandler + 'static>(
                 DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_IME_STARTCOMPOSITION => {
-                let imc = ime::Imc::get(hwnd);
-                let state = handle.state.read().unwrap();
-                if state.visible_ime_composition_window {
-                    imc.set_composition_window_position(state.ime_position);
-                }
-                if state.visible_ime_candidate_window {
-                    imc.set_candidate_window_position(
-                        state.ime_position,
-                        state.visible_ime_composition_window,
-                    );
+                {
+                    let imc = ime::Imc::get(hwnd);
+                    let state = handle.state.read().unwrap();
+                    if state.visible_ime_composition_window {
+                        imc.set_composition_window_position(state.ime_position);
+                    }
+                    if state.visible_ime_candidate_window {
+                        imc.set_candidate_window_position(
+                            state.ime_position,
+                            state.visible_ime_composition_window,
+                        );
+                    }
                 }
                 call_handler(|eh: &mut T, _| {
                     eh.ime_start_composition(handle);
